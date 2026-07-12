@@ -1,0 +1,136 @@
+{
+  "theme": "Dark Mode Luxury Vault",
+  "typography": {
+    "headings": {
+      "fontFamily": "Outfit, System",
+      "weights": ["600", "700"],
+      "usage": "Screen titles, Settings headers, Large empty states. (Use system font fallback if custom fonts aren't loaded)"
+    },
+    "body": {
+      "fontFamily": "Manrope, System",
+      "weights": ["400", "500"],
+      "usage": "Labels, descriptions, secondary text"
+    },
+    "mono": {
+      "fontFamily": "Space Mono, monospace",
+      "weights": ["700"],
+      "usage": "The actual 6/8 digit TOTP codes. CRITICAL: Use letterSpacing (tracking) for readability"
+    },
+    "scale": {
+      "h1": 32,
+      "h2": 24,
+      "h3": 20,
+      "body": 16,
+      "caption": 13,
+      "totpCode": 40
+    }
+  },
+  "colors": {
+    "backgrounds": {
+      "base": "#050505",
+      "surface": "#121214",
+      "surfaceGlass": "rgba(255, 255, 255, 0.05)",
+      "surfaceHighlight": "rgba(255, 255, 255, 0.1)"
+    },
+    "text": {
+      "primary": "#FFFFFF",
+      "secondary": "rgba(255, 255, 255, 0.6)",
+      "muted": "rgba(255, 255, 255, 0.4)",
+      "monoAccent": "#00F0FF"
+    },
+    "accents": {
+      "primary": "#00F0FF",
+      "secondary": "#7B61FF",
+      "danger": "#FF3B30",
+      "success": "#34C759"
+    },
+    "borders": {
+      "glass": "rgba(255, 255, 255, 0.12)",
+      "neon": "rgba(0, 240, 255, 0.5)"
+    }
+  },
+  "visual_enhancers": {
+    "glassmorphism": {
+      "library": "expo-blur",
+      "props": "tint='dark' intensity={30}",
+      "rules": "All cards and floating headers MUST use BlurView. Never use solid grey. Always add a 1px inner border of rgba(255,255,255,0.1) to define the edge."
+    },
+    "neumorphism": {
+      "rules": "Use for the lock screen PIN pad. Subtle drop shadow and inner highlight to make buttons look like tactile, physical keys on a premium safe."
+    },
+    "gradients": {
+      "library": "expo-linear-gradient",
+      "usage": "Use a subtle gradient from #00F0FF to #7B61FF for the circular progress timer and primary CTA buttons. Do NOT use generic gradients for backgrounds."
+    }
+  },
+  "layouts_and_grids": {
+    "system": "8pt grid system. All margins and paddings must be multiples of 8 (8, 16, 24, 32, 48).",
+    "screen_padding": 24,
+    "touch_targets": "CRITICAL: All interactive elements (buttons, list items) MUST have a minimum height/width of 48px for accessibility.",
+    "bento_cards": "Use varying heights for pinned favorites vs standard list items. Pinned favorites should be larger bento-style cards. List items should be generous, padding 24px."
+  },
+  "components": [
+    {
+      "name": "VaultCard",
+      "description": "The main TOTP item.",
+      "structure": "BlurView container with rounded corners (24px). Top row: Service Logo + Name. Middle: Massive TOTP digits. Right side/corner: Circular countdown timer. Bottom: Copy to clipboard button (pill shaped).",
+      "interaction": "On press 'Copy', trigger HapticFeedback.selectionAsync() and show a custom Toast."
+    },
+    {
+      "name": "NeonScanner",
+      "description": "QR Code Scanner overlay.",
+      "structure": "Camera view filling the screen. Overlay is a dark semi-transparent view with a clear cutout in the center. The cutout has 4 corner brackets (svg) colored #00F0FF with a neon drop shadow."
+    },
+    {
+      "name": "GlassInput",
+      "description": "Text input for manual entry and search.",
+      "structure": "TextInput inside a BlurView wrapper. Placeholder text should be muted. Active state increases the border opacity."
+    },
+    {
+      "name": "CircularTimer",
+      "description": "Countdown ring.",
+      "structure": "react-native-svg Circle with strokeDashoffset animated via react-native-reanimated based on the remaining seconds. Use LinearGradient for the stroke."
+    }
+  ],
+  "motion": {
+    "library": "react-native-reanimated",
+    "rules": "Micro-animations are mandatory. Scale down buttons slightly (scale: 0.95) on press-in, spring back on press-out. Smoothly animate the circular timer using withTiming. Fade in the list items sequentially on mount."
+  },
+  "accessibility": {
+    "haptics": "Use expo-haptics extensively. 'Impact.Light' for typing PIN/search, 'Notification.Success' when copying a code, 'Impact.Medium' for scanner success.",
+    "contrast": "Text must meet APCA standards. Pure white on #050505 is excellent.",
+    "test_ids": "Every TouchableOpacity, TextInput, and primary Text MUST have a testID (React Native equivalent of data-testid) mapped to its role, e.g., testID='copy-code-button'."
+  },
+  "media": {
+    "image_urls": [
+      {
+        "category": "Lock Screen Background",
+        "url": "https://images.unsplash.com/photo-1778849122862-7fa43a7200f8?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzOTB8MHwxfHNlYXJjaHw0fHxwcmVtaXVtJTIwZmluZ2VycHJpbnQlMjBzY2FuJTIwbWFjcm98ZW58MHx8fHwxNzgzODc1Nzc2fDA&ixlib=rb-4.1.0&q=85",
+        "description": "Sleek, dark curved metallic surfaces indicating high-end security and physical vault."
+      }
+    ],
+    "icons": "Use @expo/vector-icons (Ionicons or Feather) for system icons. For service logos (Google, Github, Discord), use MaterialCommunityIcons."
+  },
+  "instructions_to_main_agent": [
+    "You are building an Expo React Native app. Do NOT use HTML/CSS elements (no div, span, className). Use standard RN View, Text, StyleSheet, TouchableOpacity, etc. in your .js files.",
+    "Use expo-blur for ALL card backgrounds to achieve the glassmorphism effect.",
+    "Use react-native-reanimated for the circular timer and button press animations.",
+    "Use expo-linear-gradient for the timer ring stroke and primary active buttons.",
+    "Ensure 'react-native-svg' is used for the countdown timer circle.",
+    "For the UI, do not use basic solid gray backgrounds for cards. Always layer a BlurView over the absolute black #050505 background to create depth.",
+    "Implement a custom Toast using Reanimated (slide down from top) instead of the default native alert.",
+    "Implement the UI explicitly with React Native components; handle styles via StyleSheet.create.",
+    "All interactive elements MUST include the testID attribute (e.g., testID='submit-btn')."
+  ],
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
+    "Avoid generic, 'on distribution' outputs. Do not make standard, flat layouts.",
+    "Create depth through layered design elements with z-index hierarchy.",
+    "Use glass-morphism effects extensively for a premium feel.",
+    "Never use AI assistant emoji characters.",
+    "Every interaction needs micro-animations - press states, transitions.",
+    "Use generous spacing (2-3x more than typical). Cramped designs look cheap.",
+    "All interactive and key informational elements MUST include a testID attribute.",
+    "NEVER use complete transparent background on headers or overlays. Always use BlurView.",
+    "Do not use generic gray or pure black gradients. Use subtle blue/purple tints."
+  ]
+}
