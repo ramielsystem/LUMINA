@@ -19,6 +19,7 @@ import { VaultCard } from "@/src/components/VaultCard";
 import { BOTTOM_NAV_HEIGHT, BottomNav } from "@/src/components/BottomNav";
 import { useLock } from "@/src/contexts/LockContext";
 import { HistoryEntry, VaultAccount, getSettings } from "@/src/lib/vault";
+import { useI18n } from "@/src/i18n";
 
 const TICK_MS = 1000;
 
@@ -26,10 +27,11 @@ export default function VaultScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { vault, updateVault } = useLock();
+  const { t } = useI18n();
 
   const [now, setNow] = useState(Date.now());
   const [query, setQuery] = useState("");
-  const [category, setCategory] = useState<string>("All");
+  const [category, setCategory] = useState<string>(t("categoryAll"));
   const [hideCodes, setHideCodes] = useState(false);
   const historyBuffer = useRef<HistoryEntry[]>([]);
 
@@ -50,14 +52,17 @@ export default function VaultScreen() {
     const cats = new Set<string>();
     (vault?.categories ?? []).forEach((c) => cats.add(c));
     accounts.forEach((a) => a.category && cats.add(a.category));
-    return ["All", "Favorites", ...Array.from(cats)];
-  }, [vault?.categories, accounts]);
+    return [t("categoryAll"), t("categoryFavorites"), ...Array.from(cats)];
+  }, [vault?.categories, accounts, t]);
+
+  const allLabel = t("categoryAll");
+  const favLabel = t("categoryFavorites");
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     let list = accounts.filter((a) => {
-      if (category === "Favorites") return a.favorite;
-      if (category !== "All" && a.category !== category) return false;
+      if (category === favLabel) return a.favorite;
+      if (category !== allLabel && a.category !== category) return false;
       return true;
     });
     if (q) {
@@ -71,7 +76,15 @@ export default function VaultScreen() {
       return a.issuer.localeCompare(b.issuer);
     });
     return list;
-  }, [accounts, query, category]);
+  }, [accounts, query, category, allLabel, favLabel]);
+
+  useEffect(() => {
+    // Keep the selected chip in sync when the language changes: if we were
+    // on "All"/"Favorites" and their labels moved, snap back to All.
+    if (category !== allLabel && category !== favLabel && !categories.includes(category)) {
+      setCategory(allLabel);
+    }
+  }, [categories, category, allLabel, favLabel]);
 
   const toggleFavorite = async (id: string) => {
     await Haptics.selectionAsync();
@@ -111,9 +124,11 @@ export default function VaultScreen() {
     <SafeAreaView style={styles.container} edges={["top"]} testID="vault-screen">
       <View style={styles.header}>
         <View>
-          <Text style={styles.brand}>Lumina</Text>
+          <Text style={styles.brand}>{t("vaultTitle")}</Text>
           <Text style={styles.count} testID="vault-count">
-            {accounts.length} {accounts.length === 1 ? "account" : "accounts"}
+            {accounts.length === 1
+              ? t("accountsOne", { count: accounts.length })
+              : t("accountsOther", { count: accounts.length })}
           </Text>
         </View>
         <Pressable
@@ -137,7 +152,7 @@ export default function VaultScreen() {
           testID="vault-search-input"
           value={query}
           onChangeText={setQuery}
-          placeholder="Search accounts"
+          placeholder={t("searchAccounts")}
           placeholderTextColor={colors.textMuted}
           style={styles.searchInput}
           autoCorrect={false}
@@ -170,7 +185,7 @@ export default function VaultScreen() {
               onPress={() => setCategory(c)}
               style={[styles.chip, active && styles.chipActive]}
             >
-              {c === "Favorites" && <Ionicons name="star" size={12} color={active ? colors.base : colors.warning} />}
+              {c === favLabel && <Ionicons name="star" size={12} color={active ? colors.base : colors.warning} />}
               <Text style={[styles.chipText, active && styles.chipTextActive]}>{c}</Text>
             </Pressable>
           );
@@ -183,12 +198,10 @@ export default function VaultScreen() {
             <Ionicons name="shield-outline" size={40} color={colors.primary} />
           </View>
           <Text style={styles.emptyTitle}>
-            {accounts.length === 0 ? "Your vault is empty" : "No matches"}
+            {accounts.length === 0 ? t("emptyVaultTitle") : t("noMatches")}
           </Text>
           <Text style={styles.emptyBody}>
-            {accounts.length === 0
-              ? "Add your first 2FA account to get started."
-              : "Try a different search or category."}
+            {accounts.length === 0 ? t("emptyVaultBody") : t("noMatchesBody")}
           </Text>
           {accounts.length === 0 && (
             <Pressable
@@ -203,7 +216,7 @@ export default function VaultScreen() {
                 style={StyleSheet.absoluteFill}
               />
               <Ionicons name="add" size={20} color={colors.base} />
-              <Text style={styles.emptyCtaText}>Add account</Text>
+              <Text style={styles.emptyCtaText}>{t("addAccount")}</Text>
             </Pressable>
           )}
         </View>

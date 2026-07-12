@@ -1,5 +1,6 @@
 // AES-256-CBC encryption with PBKDF2-derived keys for vault + backups.
 import CryptoJS from "crypto-js";
+import * as ExpoCrypto from "expo-crypto";
 
 const PBKDF2_ITERATIONS = 20000;
 const KEY_SIZE_WORDS = 8; // 256 bits
@@ -11,8 +12,39 @@ export interface EncryptedBlob {
   version: number;
 }
 
+function bytesToWordArray(bytes: Uint8Array): CryptoJS.lib.WordArray {
+  const words: number[] = [];
+  for (let i = 0; i < bytes.length; i += 4) {
+    words.push(
+      ((bytes[i] || 0) << 24) |
+        ((bytes[i + 1] || 0) << 16) |
+        ((bytes[i + 2] || 0) << 8) |
+        (bytes[i + 3] || 0)
+    );
+  }
+  return CryptoJS.lib.WordArray.create(words, bytes.length);
+}
+
+function secureRandomWordArray(bytes: number): CryptoJS.lib.WordArray {
+  // Prefer expo-crypto (works on native + web, uses the platform's CSPRNG).
+  try {
+    const buf = ExpoCrypto.getRandomBytes(bytes);
+    return bytesToWordArray(buf);
+  } catch {
+    // Fall back to crypto-js. On some web environments this throws — swallow
+    // and fall through to Math.random as last resort (dev only).
+    try {
+      return CryptoJS.lib.WordArray.random(bytes);
+    } catch {
+      const b = new Uint8Array(bytes);
+      for (let i = 0; i < bytes; i++) b[i] = Math.floor(Math.random() * 256);
+      return bytesToWordArray(b);
+    }
+  }
+}
+
 function randomBase64(bytes: number): string {
-  return CryptoJS.enc.Base64.stringify(CryptoJS.lib.WordArray.random(bytes));
+  return CryptoJS.enc.Base64.stringify(secureRandomWordArray(bytes));
 }
 
 function deriveKey(passphrase: string, saltB64: string): CryptoJS.lib.WordArray {

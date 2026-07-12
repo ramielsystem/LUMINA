@@ -7,21 +7,26 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { colors, typography } from "@/src/lib/theme";
 import { PinPad } from "@/src/components/PinPad";
+import { LuminaLogo } from "@/src/components/LuminaLogo";
 import { useLock } from "@/src/contexts/LockContext";
 import {
   getBiometricPassphrase,
   getSettings,
+  hasCompletedFirstPinUnlock,
   isBiometricEnabled,
 } from "@/src/lib/vault";
 import { useToast } from "@/src/components/Toast";
+import { useI18n } from "@/src/i18n";
 
 export default function Lock() {
   const [pin, setPin] = useState("");
   const [attempts, setAttempts] = useState(0);
   const [bioEnabled, setBioEnabled] = useState(false);
+  const [firstPinDone, setFirstPinDone] = useState(false);
   const [busy, setBusy] = useState(false);
   const { unlock, unlockWithPassphrase } = useLock();
   const toast = useToast();
+  const { t } = useI18n();
 
   const tryBiometric = useCallback(async () => {
     setBusy(true);
@@ -29,34 +34,40 @@ export default function Lock() {
       const hasHw = await LocalAuthentication.hasHardwareAsync();
       const enrolled = await LocalAuthentication.isEnrolledAsync();
       if (!hasHw || !enrolled) {
-        toast.show("Biometrics not available on this device", "info");
+        toast.show(t("biometricNotAvailable"), "info");
         return;
       }
       const res = await LocalAuthentication.authenticateAsync({
-        promptMessage: "Unlock Lumina Auth",
-        cancelLabel: "Use PIN",
+        promptMessage: t("enterPin"),
+        cancelLabel: t("useBiometrics"),
         disableDeviceFallback: false,
       });
       if (!res.success) return;
       const pp = await getBiometricPassphrase();
       if (!pp) {
-        toast.show("Biometric key missing — enter PIN", "error");
+        toast.show(t("biometricKeyMissing"), "error");
         return;
       }
       const ok = await unlockWithPassphrase(pp);
-      if (!ok) toast.show("Vault could not be decrypted", "error");
+      if (!ok) toast.show(t("vaultDecryptFailed"), "error");
     } finally {
       setBusy(false);
     }
-  }, [toast, unlockWithPassphrase]);
+  }, [toast, unlockWithPassphrase, t]);
 
   useEffect(() => {
     (async () => {
-      const enabled = await isBiometricEnabled();
+      const [enabled, done, settings] = await Promise.all([
+        isBiometricEnabled(),
+        hasCompletedFirstPinUnlock(),
+        getSettings(),
+      ]);
       setBioEnabled(enabled);
-      const settings = await getSettings();
-      if (enabled && settings.requireBiometricOnOpen) {
-        // Auto-prompt on mount
+      setFirstPinDone(done);
+      // Only auto-prompt biometric AFTER the user has successfully entered
+      // their PIN at least once. This is the flow requested: first unlock
+      // requires PIN; subsequent unlocks may use biometrics.
+      if (enabled && done && settings.requireBiometricOnOpen) {
         tryBiometric();
       }
     })();
@@ -69,9 +80,11 @@ export default function Lock() {
     if (!ok) {
       setAttempts((a) => a + 1);
       setPin("");
-      toast.show("Incorrect PIN", "error");
+      toast.show(t("wrongPin"), "error");
     }
   };
+
+  const showBiometricButton = bioEnabled && firstPinDone;
 
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]} testID="lock-screen">
@@ -80,56 +93,53 @@ export default function Lock() {
         style={StyleSheet.absoluteFill}
       />
       <View style={styles.header}>
-        <View style={styles.badge}>
-          <Ionicons name="shield-checkmark" size={32} color={colors.primary} />
-        </View>
+        <LuminaLogo size={96} />
         <Text style={styles.brand}>LUMINA</Text>
-        <Text style={styles.subtitle}>Enter PIN to unlock</Text>
+        <Text style={styles.subtitle}>{t("enterPin")}</Text>
+        {!firstPinDone && bioEnabled && (
+          <Text style={styles.hint} testID="lock-first-pin-hint">
+            Biometrics available after first PIN unlock
+          </Text>
+        )}
       </View>
       <View style={styles.padWrap}>
         <PinPad
           value={pin}
           onChange={setPin}
           onComplete={onComplete}
-          showBiometric={bioEnabled}
+          showBiometric={showBiometricButton}
           onBiometric={tryBiometric}
           disabled={busy}
         />
         {attempts > 0 && (
           <Text style={styles.attempts} testID="lock-attempts">
-            {attempts} failed attempt{attempts === 1 ? "" : "s"}
+            {attempts === 1 ? t("attemptFailed") : t("attemptsFailed", { count: attempts })}
           </Text>
         )}
       </View>
-      <Pressable
-        testID="lock-biometric-btn"
-        onPress={tryBiometric}
-        style={styles.bioFallback}
-        hitSlop={12}
-      >
-        <Ionicons name="finger-print" size={16} color={colors.primary} />
-        <Text style={styles.bioFallbackText}>Use biometrics</Text>
-      </Pressable>
+      {showBiometricButton ? (
+        <Pressable
+          testID="lock-biometric-btn"
+          onPress={tryBiometric}
+          style={styles.bioFallback}
+          hitSlop={12}
+        >
+          <Ionicons name="finger-print" size={16} color={colors.primary} />
+          <Text style={styles.bioFallbackText}>{t("useBiometrics")}</Text>
+        </Pressable>
+      ) : (
+        <View style={{ height: 24 }} />
+      )}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.base, alignItems: "center", justifyContent: "space-around", paddingVertical: 32 },
-  header: { alignItems: "center", gap: 8 },
-  badge: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(0, 240, 255, 0.10)",
-    borderColor: colors.neonBorder,
-    borderWidth: 1,
-    marginBottom: 12,
-  },
-  brand: { ...typography.h1, color: colors.textPrimary, letterSpacing: 6 },
+  header: { alignItems: "center", gap: 6 },
+  brand: { ...typography.h1, color: colors.textPrimary, letterSpacing: 6, marginTop: 8 },
   subtitle: { color: colors.textSecondary, fontSize: 14, letterSpacing: 0.3 },
+  hint: { color: colors.textMuted, fontSize: 12, marginTop: 4 },
   padWrap: { alignItems: "center", gap: 16 },
   attempts: { color: colors.danger, fontSize: 13 },
   bioFallback: { flexDirection: "row", gap: 8, alignItems: "center" },

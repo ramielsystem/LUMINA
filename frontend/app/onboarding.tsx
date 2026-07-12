@@ -8,13 +8,16 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { colors, radii, spacing, typography } from "@/src/lib/theme";
 import { PinPad } from "@/src/components/PinPad";
+import { LuminaLogo } from "@/src/components/LuminaLogo";
 import {
   enableBiometric,
   loadVault,
+  markFirstPinUnlockDone,
   setupPin,
 } from "@/src/lib/vault";
 import { useLock } from "@/src/contexts/LockContext";
 import { useToast } from "@/src/components/Toast";
+import { useI18n } from "@/src/i18n";
 
 type Step = "intro" | "pin" | "confirm" | "biometric";
 
@@ -26,13 +29,17 @@ export default function Onboarding() {
   const router = useRouter();
   const { markOnboardedUnlock } = useLock();
   const toast = useToast();
+  const { t } = useI18n();
 
   const finalize = async (enableBio: boolean) => {
     await setupPin(pin);
     if (enableBio) await enableBiometric(pin);
+    // Set the first-PIN-done flag so biometric can start auto-prompting from
+    // the NEXT app open onwards (per user requirement).
+    await markFirstPinUnlockDone();
     const data = await loadVault(pin);
     markOnboardedUnlock(pin, data);
-    toast.show("Vault created — welcome to Lumina!", "success");
+    toast.show(t("vaultCreated"), "success");
     router.replace("/(tabs)/vault");
   };
 
@@ -44,7 +51,7 @@ export default function Onboarding() {
   const onConfirmComplete = async (v: string) => {
     setConfirm(v);
     if (v !== pin) {
-      setError("PINs don't match. Try again.");
+      setError(t("pinsDontMatch"));
       setPin("");
       setConfirm("");
       setStep("pin");
@@ -70,18 +77,13 @@ export default function Onboarding() {
         <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
           {step === "intro" && (
             <View style={styles.center} testID="onboarding-intro">
-              <View style={styles.badge}>
-                <Ionicons name="shield-checkmark" size={40} color={colors.primary} />
-              </View>
-              <Text style={styles.title}>Welcome to Lumina Auth</Text>
-              <Text style={styles.body}>
-                A premium, encrypted 2FA vault. Your secrets never leave this
-                device unencrypted — not even to us.
-              </Text>
+              <LuminaLogo size={128} />
+              <Text style={styles.title}>{t("welcomeTitle")}</Text>
+              <Text style={styles.body}>{t("welcomeBody")}</Text>
               <View style={styles.features}>
-                <Feature icon="lock-closed" text="AES-256 encrypted, PIN-protected vault" />
-                <Feature icon="finger-print" text="Unlock with Face ID or Fingerprint" />
-                <Feature icon="cloud-upload-outline" text="Optional encrypted cloud backup" />
+                <Feature icon="lock-closed" text={t("featureEncrypted")} />
+                <Feature icon="finger-print" text={t("featureBiometric")} />
+                <Feature icon="cloud-upload-outline" text={t("featureBackup")} />
               </View>
               <Pressable
                 testID="onboarding-start-btn"
@@ -94,7 +96,7 @@ export default function Onboarding() {
                   end={{ x: 1, y: 1 }}
                   style={StyleSheet.absoluteFill}
                 />
-                <Text style={styles.ctaText}>Create your vault</Text>
+                <Text style={styles.ctaText}>{t("createVault")}</Text>
                 <Ionicons name="arrow-forward" size={20} color={colors.base} />
               </Pressable>
             </View>
@@ -103,12 +105,10 @@ export default function Onboarding() {
           {(step === "pin" || step === "confirm") && (
             <View style={styles.pinWrap} testID={`onboarding-${step}`}>
               <Text style={styles.title}>
-                {step === "pin" ? "Set a 6-digit PIN" : "Confirm your PIN"}
+                {step === "pin" ? t("setPinTitle") : t("confirmPinTitle")}
               </Text>
               <Text style={styles.body}>
-                {step === "pin"
-                  ? "You'll use this to unlock your vault."
-                  : "Enter your PIN once more."}
+                {step === "pin" ? t("setPinBody") : t("confirmPinBody")}
               </Text>
               {error && (
                 <Text style={styles.errorText} testID="onboarding-error">{error}</Text>
@@ -128,11 +128,8 @@ export default function Onboarding() {
               <View style={styles.badge}>
                 <Ionicons name="finger-print" size={44} color={colors.primary} />
               </View>
-              <Text style={styles.title}>Unlock faster</Text>
-              <Text style={styles.body}>
-                Use Face ID / Touch ID / Fingerprint to unlock Lumina without
-                typing your PIN. You can always fall back to the PIN.
-              </Text>
+              <Text style={styles.title}>{t("biometricPromptTitle")}</Text>
+              <Text style={styles.body}>{t("biometricPromptBody")}</Text>
               <View style={{ height: 24 }} />
               <Pressable
                 testID="onboarding-enable-bio"
@@ -145,14 +142,14 @@ export default function Onboarding() {
                   end={{ x: 1, y: 1 }}
                   style={StyleSheet.absoluteFill}
                 />
-                <Text style={styles.ctaText}>Enable biometrics</Text>
+                <Text style={styles.ctaText}>{t("enableBiometrics")}</Text>
               </Pressable>
               <Pressable
                 testID="onboarding-skip-bio"
                 onPress={() => finalize(false)}
                 style={styles.ctaGhost}
               >
-                <Text style={styles.ctaGhostText}>Not now</Text>
+                <Text style={styles.ctaGhostText}>{t("notNow")}</Text>
               </Pressable>
             </View>
           )}

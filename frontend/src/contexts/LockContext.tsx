@@ -14,6 +14,7 @@ import {
   getSettings,
   isOnboarded,
   loadVault,
+  markFirstPinUnlockDone,
   saveVault,
   verifyPin,
   VaultData,
@@ -91,7 +92,13 @@ export function LockProvider({ children }: { children: React.ReactNode }) {
     async (pin: string) => {
       const ok = await verifyPin(pin);
       if (!ok) return false;
-      return await unlockWithPassphrase(pin);
+      const success = await unlockWithPassphrase(pin);
+      if (success) {
+        // Mark that at least one successful PIN unlock has happened, so
+        // subsequent app-opens may auto-prompt biometrics.
+        await markFirstPinUnlockDone();
+      }
+      return success;
     },
     [unlockWithPassphrase]
   );

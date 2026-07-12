@@ -18,15 +18,18 @@ import {
   saveSettings,
   Settings as VaultSettings,
 } from "@/src/lib/vault";
+import { LANGUAGES, useI18n } from "@/src/i18n";
 
 export default function SettingsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { passphrase, lock } = useLock();
   const toast = useToast();
+  const { t, language, resolved } = useI18n();
   const [settings, setSettings] = useState<VaultSettings | null>(null);
   const [bio, setBio] = useState(false);
   const [bioAvailable, setBioAvailable] = useState(false);
+  const [bioTypes, setBioTypes] = useState<string[]>([]);
 
   const reload = useCallback(async () => {
     const s = await getSettings();
@@ -35,6 +38,22 @@ export default function SettingsScreen() {
     const hw = await LocalAuthentication.hasHardwareAsync();
     const enrolled = await LocalAuthentication.isEnrolledAsync();
     setBioAvailable(hw && enrolled);
+    if (hw) {
+      const types = await LocalAuthentication.supportedAuthenticationTypesAsync();
+      const names = types.map((tp) => {
+        switch (tp) {
+          case LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION:
+            return "Face ID";
+          case LocalAuthentication.AuthenticationType.FINGERPRINT:
+            return "Fingerprint";
+          case LocalAuthentication.AuthenticationType.IRIS:
+            return "Iris";
+          default:
+            return "Biometric";
+        }
+      });
+      setBioTypes(names);
+    }
   }, []);
 
   useEffect(() => {
@@ -49,25 +68,48 @@ export default function SettingsScreen() {
   const toggleBio = async (v: boolean) => {
     if (v) {
       if (!bioAvailable) {
-        toast.show("Biometrics not available", "error");
+        toast.show(t("biometricNotAvailable"), "error");
         return;
       }
       if (!passphrase) return;
       const res = await LocalAuthentication.authenticateAsync({
-        promptMessage: "Confirm to enable biometrics",
+        promptMessage: t("biometricPromptTitle"),
       });
       if (!res.success) return;
       await enableBiometric(passphrase);
       setBio(true);
-      toast.show("Biometrics enabled");
+      toast.show(t("biometricWorking"));
     } else {
       await disableBiometric();
       setBio(false);
-      toast.show("Biometrics disabled");
+    }
+  };
+
+  const testBiometric = async () => {
+    if (!bioAvailable) {
+      toast.show(t("biometricNotAvailable"), "error");
+      return;
+    }
+    const res = await LocalAuthentication.authenticateAsync({
+      promptMessage: t("testBiometric"),
+      disableDeviceFallback: true,
+    });
+    if (res.success) {
+      toast.show(t("biometricWorking"), "success");
+    } else {
+      toast.show(t("biometricFailed"), "error");
     }
   };
 
   if (!settings) return null;
+
+  const bioSubtitle = bioAvailable
+    ? bioTypes.join(" / ") || "Face ID / Fingerprint"
+    : t("biometricUnavailable");
+  const languageLabel =
+    language === "system"
+      ? `System · ${LANGUAGES.find((l) => l.code === resolved)?.native ?? resolved}`
+      : LANGUAGES.find((l) => l.code === language)?.native ?? language;
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]} testID="settings-screen">
@@ -75,14 +117,14 @@ export default function SettingsScreen() {
         contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: BOTTOM_NAV_HEIGHT + insets.bottom + 24 }}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.title}>Settings</Text>
+        <Text style={styles.title}>{t("settingsTitle")}</Text>
 
-        <SectionLabel>Security</SectionLabel>
+        <SectionLabel>{t("sectionSecurity")}</SectionLabel>
         <GlassCard style={styles.card}>
           <SettingRow
             icon="finger-print"
-            title="Biometric unlock"
-            subtitle={bioAvailable ? "Face ID / Fingerprint" : "Not available on this device"}
+            title={t("biometricUnlock")}
+            subtitle={bioSubtitle}
             right={
               <Switch
                 testID="setting-biometric"
@@ -94,10 +136,19 @@ export default function SettingsScreen() {
             }
           />
           <Divider />
+          <PressRow
+            testID="setting-test-biometric"
+            icon="checkmark-done"
+            title={t("testBiometric")}
+            subtitle={t("testBiometricSub")}
+            onPress={testBiometric}
+            disabled={!bioAvailable}
+          />
+          <Divider />
           <SettingRow
             icon="shield-checkmark"
-            title="Require biometrics on open"
-            subtitle="Auto-prompt when Lumina launches"
+            title={t("requireBioOnOpen")}
+            subtitle={t("requireBioOnOpenSub")}
             right={
               <Switch
                 testID="setting-bio-on-open"
@@ -110,8 +161,8 @@ export default function SettingsScreen() {
           <Divider />
           <SettingRow
             icon="eye-off"
-            title="Hide codes by default"
-            subtitle="Tap to reveal each code"
+            title={t("hideCodes")}
+            subtitle={t("hideCodesSub")}
             right={
               <Switch
                 testID="setting-hide-codes"
@@ -125,8 +176,12 @@ export default function SettingsScreen() {
           <PressRow
             testID="setting-autolock"
             icon="timer-outline"
-            title="Auto-lock"
-            subtitle={settings.autoLockSeconds === 0 ? "Never" : `${settings.autoLockSeconds}s inactivity`}
+            title={t("autoLock")}
+            subtitle={
+              settings.autoLockSeconds === 0
+                ? t("autoLockNever")
+                : t("autoLockSecs", { secs: settings.autoLockSeconds })
+            }
             onPress={() => {
               const options = [15, 30, 60, 120, 300, 0];
               const cur = options.indexOf(settings.autoLockSeconds);
@@ -136,28 +191,39 @@ export default function SettingsScreen() {
           />
         </GlassCard>
 
-        <SectionLabel>Backup</SectionLabel>
+        <SectionLabel>{t("sectionAppearance")}</SectionLabel>
+        <GlassCard style={styles.card}>
+          <PressRow
+            testID="setting-language"
+            icon="language"
+            title={t("language")}
+            subtitle={languageLabel}
+            onPress={() => router.push("/language")}
+          />
+        </GlassCard>
+
+        <SectionLabel>{t("sectionBackup")}</SectionLabel>
         <GlassCard style={styles.card}>
           <PressRow
             testID="setting-backup"
             icon="cloud-upload-outline"
-            title="Backup & Restore"
-            subtitle="Encrypted export, cloud sync"
+            title={t("backupAndRestore")}
+            subtitle={t("backupAndRestoreSub")}
             onPress={() => router.push("/backup")}
           />
           <Divider />
           <PressRow
             testID="setting-history"
             icon="time-outline"
-            title="History"
-            subtitle={`${settings.keepHistory ? "On" : "Off"} · last copied codes`}
+            title={t("history")}
+            subtitle={t("historySub", { state: settings.keepHistory ? t("historyOn") : t("historyOff") })}
             onPress={() => router.push("/history")}
           />
           <Divider />
           <SettingRow
             icon="save-outline"
-            title="Keep history"
-            subtitle="Audit copied codes locally"
+            title={t("keepHistory")}
+            subtitle={t("keepHistorySub")}
             right={
               <Switch
                 testID="setting-keep-history"
@@ -169,13 +235,13 @@ export default function SettingsScreen() {
           />
         </GlassCard>
 
-        <SectionLabel>Session</SectionLabel>
+        <SectionLabel>{t("sectionSession")}</SectionLabel>
         <GlassCard style={styles.card}>
           <PressRow
             testID="setting-lock-now"
             icon="lock-closed"
-            title="Lock now"
-            subtitle="Requires PIN to re-open"
+            title={t("lockNow")}
+            subtitle={t("lockNowSub")}
             onPress={() => {
               lock();
               router.replace("/lock");
@@ -183,13 +249,13 @@ export default function SettingsScreen() {
           />
         </GlassCard>
 
-        <SectionLabel>About</SectionLabel>
+        <SectionLabel>{t("sectionAbout")}</SectionLabel>
         <GlassCard style={styles.card}>
           <View style={styles.aboutRow}>
             <Ionicons name="shield-checkmark" size={22} color={colors.primary} />
             <View style={{ flex: 1 }}>
-              <Text style={styles.aboutTitle}>Lumina Auth</Text>
-              <Text style={styles.aboutSubtitle}>Premium encrypted 2FA · v1.0.0</Text>
+              <Text style={styles.aboutTitle}>{t("appName")}</Text>
+              <Text style={styles.aboutSubtitle}>{t("appTagline")} · v1.0.0</Text>
             </View>
           </View>
         </GlassCard>
@@ -234,15 +300,26 @@ function PressRow({
   subtitle,
   onPress,
   testID,
+  disabled,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   title: string;
   subtitle?: string;
   onPress: () => void;
   testID: string;
+  disabled?: boolean;
 }) {
   return (
-    <Pressable testID={testID} onPress={onPress} style={({ pressed }) => [styles.row, pressed && { opacity: 0.7 }]}>
+    <Pressable
+      testID={testID}
+      onPress={onPress}
+      disabled={disabled}
+      style={({ pressed }) => [
+        styles.row,
+        pressed && { opacity: 0.7 },
+        disabled && { opacity: 0.5 },
+      ]}
+    >
       <View style={styles.rowIcon}>
         <Ionicons name={icon} size={20} color={colors.primary} />
       </View>

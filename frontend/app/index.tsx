@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { colors, typography } from "@/src/lib/theme";
 import { useLock } from "@/src/contexts/LockContext";
+import { LuminaLogo } from "@/src/components/LuminaLogo";
 
 export default function Index() {
   const router = useRouter();
@@ -21,6 +22,7 @@ export default function Index() {
         colors={["rgba(0, 240, 255, 0.15)", "rgba(123, 97, 255, 0.15)", "rgba(0, 0, 0, 0)"]}
         style={StyleSheet.absoluteFill}
       />
+      <LuminaLogo size={140} />
       <Text style={styles.brand}>LUMINA</Text>
       <Text style={styles.subtitle}>Auth</Text>
       <ActivityIndicator color={colors.primary} style={{ marginTop: 24 }} />
@@ -29,7 +31,7 @@ export default function Index() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.base, alignItems: "center", justifyContent: "center" },
-  brand: { ...typography.h1, color: colors.textPrimary, letterSpacing: 8, fontSize: 34 },
+  container: { flex: 1, backgroundColor: colors.base, alignItems: "center", justifyContent: "center", gap: 8 },
+  brand: { ...typography.h1, color: colors.textPrimary, letterSpacing: 8, fontSize: 34, marginTop: 16 },
   subtitle: { color: colors.primary, fontSize: 16, letterSpacing: 4, marginTop: 4, fontWeight: "600" },
 });

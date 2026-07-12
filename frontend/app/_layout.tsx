@@ -9,6 +9,7 @@ import { useIconFonts } from "@/src/hooks/use-icon-fonts";
 import { LockProvider, useLock } from "@/src/contexts/LockContext";
 import { AuthProvider } from "@/src/contexts/AuthContext";
 import { ToastProvider } from "@/src/components/Toast";
+import { I18nProvider } from "@/src/i18n";
 import { colors } from "@/src/lib/theme";
 
 LogBox.ignoreAllLogs(true);
@@ -56,17 +57,19 @@ export default function RootLayout() {
           <StatusBar barStyle="light-content" backgroundColor={colors.base} />
           <AuthProvider>
             <LockProvider>
-              <ToastProvider>
-                <AuthGate>
-                  <Stack
-                    screenOptions={{
-                      headerShown: false,
-                      contentStyle: { backgroundColor: colors.base },
-                      animation: "fade",
-                    }}
-                  />
-                </AuthGate>
-              </ToastProvider>
+              <I18nProvider>
+                <ToastProvider>
+                  <AuthGate>
+                    <Stack
+                      screenOptions={{
+                        headerShown: false,
+                        contentStyle: { backgroundColor: colors.base },
+                        animation: "fade",
+                      }}
+                    />
+                  </AuthGate>
+                </ToastProvider>
+              </I18nProvider>
             </LockProvider>
           </AuthProvider>
         </View>

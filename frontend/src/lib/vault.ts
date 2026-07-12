@@ -41,6 +41,16 @@ const K_PIN_SALT = "luminaPinSalt"; // secure
 const K_BIOMETRIC_ENABLED = "luminaBiometricEnabled"; // secure — stores the passphrase when biometric is enabled
 const K_SETTINGS = "luminaSettings"; // plain KV
 const K_ONBOARDED = "luminaOnboarded";
+const K_FIRST_PIN_DONE = "luminaFirstPinDone"; // KV — biometric only auto-prompts AFTER the first PIN unlock
+
+export async function hasCompletedFirstPinUnlock(): Promise<boolean> {
+  const v = await storage.getItem<string>(K_FIRST_PIN_DONE, "");
+  return v === "1";
+}
+
+export async function markFirstPinUnlockDone(): Promise<void> {
+  await storage.setItem(K_FIRST_PIN_DONE, "1");
+}
 
 const DEFAULT_CATEGORIES = ["Personal", "Work", "Crypto", "Gaming"];
 
@@ -175,4 +185,5 @@ export async function wipeAll(): Promise<void> {
   await storage.secureRemove(K_BIOMETRIC_ENABLED);
   await storage.removeItem(K_SETTINGS);
   await storage.removeItem(K_ONBOARDED);
+  await storage.removeItem(K_FIRST_PIN_DONE);
 }

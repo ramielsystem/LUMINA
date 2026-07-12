@@ -23,7 +23,11 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.emergent.totpguard.jywofq",
-      "permissions": ["CAMERA", "USE_BIOMETRIC", "USE_FINGERPRINT"]
+      "permissions": [
+        "CAMERA",
+        "USE_BIOMETRIC",
+        "USE_FINGERPRINT"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -52,7 +56,8 @@
           "resizeMode": "contain",
           "backgroundColor": "#050505"
         }
-      ]
+      ],
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true
