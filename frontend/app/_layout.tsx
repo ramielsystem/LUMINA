@@ -1,20 +1,42 @@
-import { Stack } from "expo-router";
+import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
-import { LogBox } from "react-native";
+import { LogBox, StatusBar, View, StyleSheet } from "react-native";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import { useIconFonts } from "@/src/hooks/use-icon-fonts";
+import { LockProvider, useLock } from "@/src/contexts/LockContext";
+import { AuthProvider } from "@/src/contexts/AuthContext";
+import { ToastProvider } from "@/src/components/Toast";
+import { colors } from "@/src/lib/theme";
 
-
-// Disable logbox errors etc so that users can see the app
-// and agent works as expected.
-LogBox.ignoreAllLogs(true)
-
-// Keep the native splash visible from cold start until icon fonts register.
-// Required because @expo/vector-icons' componentDidMount fallback fires
-// Font.loadAsync against a broken vendor path if any <Icon> mounts before
-// the family is registered — which throws on Android Expo Go.
+LogBox.ignoreAllLogs(true);
 SplashScreen.preventAutoHideAsync();
+
+const PUBLIC_ROUTES = new Set(["onboarding", "lock", "index", "auth-callback"]);
+
+function AuthGate({ children }: { children: React.ReactNode }) {
+  const { state } = useLock();
+  const segments = useSegments();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (state === "loading") return;
+    const first = segments[0] ?? "index";
+    if (state === "onboarding" && first !== "onboarding") {
+      router.replace("/onboarding");
+    } else if (state === "locked" && !PUBLIC_ROUTES.has(first)) {
+      router.replace("/lock");
+    } else if (state === "locked" && first === "onboarding") {
+      router.replace("/lock");
+    } else if (state === "unlocked" && (first === "lock" || first === "onboarding" || first === "index")) {
+      router.replace("/(tabs)/vault");
+    }
+  }, [state, segments, router]);
+
+  return <>{children}</>;
+}
 
 export default function RootLayout() {
   const [loaded, error] = useIconFonts();
@@ -25,9 +47,34 @@ export default function RootLayout() {
     }
   }, [loaded, error]);
 
-  // If the CDN is unreachable we fall through on error rather than wedging
-  // the app — icons will tofu, but the app still boots.
   if (!loaded && !error) return null;
 
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return (
+    <GestureHandlerRootView style={styles.root}>
+      <SafeAreaProvider>
+        <View style={styles.root}>
+          <StatusBar barStyle="light-content" backgroundColor={colors.base} />
+          <AuthProvider>
+            <LockProvider>
+              <ToastProvider>
+                <AuthGate>
+                  <Stack
+                    screenOptions={{
+                      headerShown: false,
+                      contentStyle: { backgroundColor: colors.base },
+                      animation: "fade",
+                    }}
+                  />
+                </AuthGate>
+              </ToastProvider>
+            </LockProvider>
+          </AuthProvider>
+        </View>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
+  );
 }
+
+const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.base },
+});

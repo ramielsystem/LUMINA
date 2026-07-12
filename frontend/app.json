@@ -1,24 +1,29 @@
 {
   "expo": {
-    "name": "frontend",
+    "name": "Lumina Auth",
     "slug": "frontend",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "frontend",
-    "userInterfaceStyle": "automatic",
+    "scheme": "luminaauth",
+    "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.emergent.totpguard.jywofq"
+      "bundleIdentifier": "com.emergent.totpguard.jywofq",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Scan 2FA QR codes to add accounts",
+        "NSFaceIDUsageDescription": "Unlock your Lumina vault"
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#000000"
+        "backgroundColor": "#050505"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.emergent.totpguard.jywofq"
+      "package": "com.emergent.totpguard.jywofq",
+      "permissions": ["CAMERA", "USE_BIOMETRIC", "USE_FINGERPRINT"]
     },
     "web": {
       "bundler": "metro",
@@ -28,12 +33,24 @@
     "plugins": [
       "expo-router",
       [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow Lumina Auth to scan 2FA QR codes"
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Unlock your Lumina vault"
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "image": "./assets/images/splash-image.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#000000"
+          "backgroundColor": "#050505"
         }
       ]
     ],
