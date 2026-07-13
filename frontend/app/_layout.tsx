@@ -11,6 +11,7 @@ import { AuthProvider } from "@/src/contexts/AuthContext";
 import { ThemeProvider } from "@/src/contexts/ThemeContext";
 import { GlobalBackground } from "@/src/components/GlobalBackground";
 import { ToastProvider } from "@/src/components/Toast";
+import { WallpaperProvider } from "@/src/contexts/WallpaperContext";
 import { I18nProvider } from "@/src/i18n";
 import { colors } from "@/src/lib/theme";
 
@@ -56,27 +57,29 @@ export default function RootLayout() {
     <GestureHandlerRootView style={styles.root}>
       <SafeAreaProvider>
         <ThemeProvider>
-          <View style={styles.root}>
-            <GlobalBackground />
-            <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-            <AuthProvider>
-              <LockProvider>
-                <I18nProvider>
-                  <ToastProvider>
-                    <AuthGate>
-                      <Stack
-                        screenOptions={{
-                          headerShown: false,
-                          contentStyle: { backgroundColor: "transparent" },
-                          animation: "fade",
-                        }}
-                      />
-                    </AuthGate>
-                  </ToastProvider>
-                </I18nProvider>
-              </LockProvider>
-            </AuthProvider>
-          </View>
+          <WallpaperProvider>
+            <View style={styles.root}>
+              <GlobalBackground />
+              <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
+              <AuthProvider>
+                <LockProvider>
+                  <I18nProvider>
+                    <ToastProvider>
+                      <AuthGate>
+                        <Stack
+                          screenOptions={{
+                            headerShown: false,
+                            contentStyle: { backgroundColor: "transparent" },
+                            animation: "fade",
+                          }}
+                        />
+                      </AuthGate>
+                    </ToastProvider>
+                  </I18nProvider>
+                </LockProvider>
+              </AuthProvider>
+            </View>
+          </WallpaperProvider>
         </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

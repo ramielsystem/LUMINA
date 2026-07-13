@@ -1,145 +1,383 @@
 import React, { useEffect, useState } from "react";
-import { FlatList, Image, Pressable, StyleSheet, Text, View, ActivityIndicator } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  FlatList,
+  Image,
+  Dimensions,
+  ActivityIndicator,
+  RefreshControl,
+  Pressable,
+  Modal,
+} from "react-native";
+import { colors, spacing, typography, radii } from "@/src/lib/theme";
 import { ScreenHeader } from "@/src/components/ScreenHeader";
 import { BottomNav } from "@/src/components/BottomNav";
 import { GlassCard } from "@/src/components/GlassCard";
-import { colors, radii, typography } from "@/src/lib/theme";
+import { animeService, Anime } from "@/src/services/animeApi";
+import { useTranslation } from "@/src/i18n";
+import { LinearGradient } from "expo-linear-gradient";
+import { AnimeDetailsModal } from "@/src/components/AnimeDetailsModal";
+import { useLock } from "@/src/contexts/LockContext";
+import { useToast } from "@/src/components/Toast";
+import { Ionicons } from "@expo/vector-icons";
 
-const ANILIST_API = "https://graphql.anilist.co";
-
-const TRENDING_QUERY = `
-query ($page: Int, $perPage: Int) {
-  Page(page: $page, perPage: $perPage) {
-    media(type: ANIME, sort: TRENDING_DESC) {
-      id
-      title {
-        english
-        romaji
-      }
-      coverImage {
-        large
-        color
-      }
-      description
-      genres
-      averageScore
-    }
-  }
-}
-`;
+const { width } = Dimensions.get("window");
 
 export default function AnimeHubScreen() {
-  const [anime, setAnime] = useState<any[]>([]);
+  const { t } = useTranslation();
+  const { vault, updateVault } = useLock();
+  const toast = useToast();
+  
+  const [trending, setTrending] = useState<Anime[]>([]);
+  const [seasonReleases, setSeasonReleases] = useState<Anime[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  
+  const [selectedAnime, setSelectedAnime] = useState<Anime | null>(null);
+  const [detailsVisible, setDetailsVisible] = useState(false);
+  const [accountPickerVisible, setAccountPickerVisible] = useState(false);
 
-  const fetchAnime = async () => {
+  const loadAnime = async () => {
     try {
-      const response = await fetch(ANILIST_API, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          query: TRENDING_QUERY,
-          variables: { page: 1, perPage: 20 }
-        })
-      });
-      const json = await response.json();
-      setAnime(json.data.Page.media);
-    } catch (e) {
-      console.error(e);
+      const [trendingData, seasonData] = await Promise.all([
+        animeService.getTrending(1, 10),
+        animeService.getSeasonReleases(1, 10),
+      ]);
+      setTrending(trendingData);
+      setSeasonReleases(seasonData);
+    } catch (error) {
+      console.error("Error loading anime data:", error);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
   useEffect(() => {
-    fetchAnime();
+    loadAnime();
   }, []);
 
-  const renderItem = ({ item }: { item: any }) => (
-    <GlassCard style={styles.animeCard}>
-      <Image source={{ uri: item.coverImage.large }} style={styles.cover} />
-      <View style={styles.info}>
-        <Text style={styles.title} numberOfLines={2}>
-          {item.title.english || item.title.romaji}
-        </Text>
-        <View style={styles.meta}>
-          <View style={styles.scoreWrap}>
-            <Ionicons name="star" size={14} color="#FFD700" />
-            <Text style={styles.score}>{item.averageScore}%</Text>
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadAnime();
+  };
+
+  const handleLinkToAccount = async (accountId: string) => {
+    if (!selectedAnime) return;
+
+    await updateVault((draft) => {
+      const acc = draft.accounts.find((a) => a.id === accountId);
+      if (acc) {
+        acc.animeId = selectedAnime.id;
+        acc.animeTheme = {
+          primaryColor: selectedAnime.coverImage.color,
+          bannerImage: selectedAnime.bannerImage || selectedAnime.coverImage.extraLarge || selectedAnime.coverImage.large,
+        };
+      }
+      return draft;
+    });
+
+    setAccountPickerVisible(false);
+    setDetailsVisible(false);
+    toast.show("Conta vinculada com sucesso!");
+  };
+
+  const renderAnimeCard = ({ item }: { item: Anime }, isTrending = false) => (
+    <Pressable
+      onPress={() => {
+        setSelectedAnime(item);
+        setDetailsVisible(true);
+      }}
+    >
+      <GlassCard style={[styles.animeCard, isTrending && styles.trendingCard]}>
+        <Image
+          source={{ uri: item.coverImage.extraLarge || item.coverImage.large }}
+          style={styles.coverImage}
+        />
+        <LinearGradient
+          colors={["transparent", "rgba(0,0,0,0.8)", "rgba(0,0,0,1)"]}
+          style={styles.cardGradient}
+        />
+        <View style={styles.cardInfo}>
+          <Text style={styles.animeTitle} numberOfLines={2}>
+            {item.title.english || item.title.romaji}
+          </Text>
+          <View style={styles.metaRow}>
+            <Text style={styles.scoreText}>⭐ {item.meanScore / 10}</Text>
+            {item.status === "RELEASING" && (
+              <View style={styles.liveBadge}>
+                <View style={styles.liveDot} />
+                <Text style={styles.liveText}>LIVE</Text>
+              </View>
+            )}
           </View>
-          <Text style={styles.genres} numberOfLines={1}>{item.genres.slice(0, 2).join(", ")}</Text>
         </View>
-        <Pressable style={styles.addBtn}>
-          <Ionicons name="add" size={16} color={colors.primary} />
-          <Text style={styles.addText}>Link to 2FA</Text>
-        </Pressable>
-      </View>
-    </GlassCard>
+      </GlassCard>
+    </Pressable>
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={["top"]}>
+    <View style={styles.container}>
       <ScreenHeader title="Anime Hub" />
-      
-      {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator color={colors.primary} size="large" />
+
+      {loading && !refreshing ? (
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : (
-        <FlatList
-          data={anime}
-          renderItem={renderItem}
-          keyExtractor={(item) => item.id.toString()}
-          contentContainerStyle={styles.list}
-          showsVerticalScrollIndicator={false}
-          ListHeaderComponent={
-            <View style={styles.header}>
-              <Text style={styles.sectionTitle}>Trending Anime</Text>
-            </View>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
           }
-        />
+        >
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Em Alta Agora 🔥</Text>
+            <FlatList
+              data={trending}
+              renderItem={(info) => renderAnimeCard(info, true)}
+              keyExtractor={(item) => `trending-${item.id}`}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.horizontalList}
+              snapToInterval={width * 0.75 + spacing.m}
+              decelerationRate="fast"
+            />
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Lançamentos da Temporada 📺</Text>
+            <FlatList
+              data={seasonReleases}
+              renderItem={(info) => renderAnimeCard(info, false)}
+              keyExtractor={(item) => `season-${item.id}`}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.horizontalList}
+              snapToInterval={width * 0.45 + spacing.m}
+              decelerationRate="fast"
+            />
+          </View>
+
+          <View style={styles.comingSoon}>
+            <Text style={styles.comingSoonTitle}>My Anime List</Text>
+            <Text style={styles.comingSoonText}>
+              Vincule seus favoritos às suas contas 2FA clicando em um anime.
+            </Text>
+          </View>
+        </ScrollView>
       )}
 
+      <AnimeDetailsModal
+        visible={detailsVisible}
+        anime={selectedAnime}
+        onClose={() => setDetailsVisible(false)}
+        onLink={() => setAccountPickerVisible(true)}
+      />
+
+      {/* Modal de Seleção de Conta */}
+      <Modal visible={accountPickerVisible} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <GlassCard style={styles.pickerContainer}>
+            <View style={styles.pickerHeader}>
+              <Text style={styles.pickerTitle}>Escolha uma conta</Text>
+              <Pressable onPress={() => setAccountPickerVisible(false)}>
+                <Ionicons name="close" size={24} color={colors.textPrimary} />
+              </Pressable>
+            </View>
+            <FlatList
+              data={vault?.accounts || []}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => (
+                <Pressable
+                  style={styles.accountItem}
+                  onPress={() => handleLinkToAccount(item.id)}
+                >
+                  <View style={styles.accountInfo}>
+                    <Text style={styles.accountIssuer}>{item.issuer}</Text>
+                    <Text style={styles.accountName}>{item.account}</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+                </Pressable>
+              )}
+              ListEmptyComponent={
+                <Text style={styles.emptyText}>Nenhuma conta no cofre.</Text>
+              }
+            />
+          </GlassCard>
+        </View>
+      </Modal>
+
       <BottomNav />
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  list: { padding: 16, paddingBottom: 100 },
-  header: { marginBottom: 16 },
-  sectionTitle: { ...typography.h2, color: colors.textPrimary },
+  container: {
+    flex: 1,
+    backgroundColor: colors.base,
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  scrollContent: {
+    paddingBottom: 100,
+  },
+  section: {
+    marginTop: spacing.l,
+  },
+  sectionTitle: {
+    ...typography.h2,
+    color: colors.primary,
+    paddingHorizontal: spacing.m,
+    marginBottom: spacing.m,
+  },
+  horizontalList: {
+    paddingHorizontal: spacing.m,
+  },
   animeCard: {
-    flexDirection: "row",
-    marginBottom: 16,
-    padding: 12,
-    gap: 12,
+    width: width * 0.45,
+    height: 250,
+    marginRight: spacing.m,
+    padding: 0,
+    overflow: "hidden",
+    borderRadius: 16,
+    borderWidth: 0,
   },
-  cover: {
-    width: 80,
-    height: 120,
-    borderRadius: radii.md,
-    backgroundColor: "rgba(255,255,255,0.05)",
+  trendingCard: {
+    width: width * 0.75,
+    height: 200,
   },
-  info: { flex: 1, justifyContent: "space-between" },
-  title: { ...typography.h3, color: colors.textPrimary },
-  meta: { flexDirection: "row", alignItems: "center", gap: 12 },
-  scoreWrap: { flexDirection: "row", alignItems: "center", gap: 4 },
-  score: { color: colors.textSecondary, fontSize: 12 },
-  genres: { color: colors.textSecondary, fontSize: 12, flex: 1 },
-  addBtn: {
+  coverImage: {
+    width: "100%",
+    height: "100%",
+    position: "absolute",
+  },
+  cardGradient: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: "60%",
+  },
+  cardInfo: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: spacing.m,
+  },
+  animeTitle: {
+    ...typography.h3,
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: "bold",
+    marginBottom: 4,
+  },
+  metaRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: radii.sm,
-    backgroundColor: "rgba(0, 229, 255, 0.1)",
-    alignSelf: "flex-start",
+    justifyContent: "space-between",
   },
-  addText: { color: colors.primary, fontSize: 12, fontWeight: "600" },
+  scoreText: {
+    ...typography.caption,
+    color: colors.accent,
+    fontWeight: "bold",
+  },
+  liveBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255, 0, 0, 0.2)",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: "rgba(255, 0, 0, 0.4)",
+  },
+  liveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#ff4444",
+    marginRight: 4,
+  },
+  liveText: {
+    color: "#ff4444",
+    fontSize: 10,
+    fontWeight: "bold",
+  },
+  comingSoon: {
+    margin: spacing.m,
+    marginTop: spacing.xl,
+    padding: spacing.l,
+    borderRadius: 16,
+    backgroundColor: "rgba(255, 255, 255, 0.03)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.1)",
+    borderStyle: "dashed",
+    alignItems: "center",
+  },
+  comingSoonTitle: {
+    ...typography.h3,
+    color: colors.textMuted,
+    marginBottom: 8,
+  },
+  comingSoonText: {
+    ...typography.body,
+    color: colors.textMuted,
+    textAlign: "center",
+    fontSize: 12,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.8)",
+    justifyContent: "flex-end",
+  },
+  pickerContainer: {
+    height: "60%",
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+    padding: spacing.m,
+  },
+  pickerHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: spacing.l,
+  },
+  pickerTitle: {
+    ...typography.h2,
+    color: colors.textPrimary,
+  },
+  accountItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: spacing.m,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255,255,255,0.1)",
+  },
+  accountInfo: {
+    flex: 1,
+  },
+  accountIssuer: {
+    ...typography.body,
+    fontWeight: "bold",
+    color: colors.textPrimary,
+  },
+  accountName: {
+    ...typography.caption,
+    color: colors.textMuted,
+  },
+  emptyText: {
+    ...typography.body,
+    color: colors.textMuted,
+    textAlign: "center",
+    marginTop: 40,
+  },
 });

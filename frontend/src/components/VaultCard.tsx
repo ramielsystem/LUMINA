@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View, Image } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as Clipboard from "expo-clipboard";
 import Animated, { FadeIn, useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
+import { LinearGradient } from "expo-linear-gradient";
 
 import { colors, radii, spacing, typography } from "@/src/lib/theme";
 import { generateCode, progressRatio, secondsRemaining } from "@/src/lib/totp";
@@ -20,6 +21,7 @@ interface Props {
   onToggleFavorite?: (id: string) => void;
   onPress?: (id: string) => void;
   onCopy?: (account: VaultAccount, code: string) => void;
+  onLinkAnime?: (id: string) => void;
 }
 
 function formatCode(code: string): string {
@@ -39,6 +41,9 @@ export const VaultCard = React.memo(function VaultCard({
   const [reveal, setReveal] = useState(!hidden);
   const scale = useSharedValue(1);
   const toast = useToast();
+
+  const animeColor = account.animeTheme?.primaryColor || colors.primary;
+  const animeBanner = account.animeTheme?.bannerImage;
 
   useEffect(() => {
     setReveal(!hidden);
@@ -84,8 +89,22 @@ export const VaultCard = React.memo(function VaultCard({
         onLongPress={() => onToggleFavorite?.(account.id)}
         delayLongPress={350}
       >
-        <GlassCard style={styles.card}>
+        <GlassCard style={[styles.card, animeBanner ? { overflow: "hidden" } : {}]}>
+          {animeBanner && (
+            <Image
+              source={{ uri: animeBanner }}
+              style={[StyleSheet.absoluteFill, { opacity: 0.25 }]}
+              resizeMode="cover"
+            />
+          )}
+          {animeBanner && (
+            <LinearGradient
+              colors={["rgba(0,0,0,0.6)", "rgba(0,0,0,0.9)"]}
+              style={StyleSheet.absoluteFill}
+            />
+          )}
           <View style={styles.headerRow}>
+
             <ServiceIcon issuer={account.issuer} iconUrl={account.iconUrl} size={44} />
             <View style={styles.headerText}>
               <Text style={styles.issuer} numberOfLines={1} testID={`vault-card-issuer-${account.id}`}>
@@ -111,13 +130,13 @@ export const VaultCard = React.memo(function VaultCard({
 
           <View style={styles.codeRow}>
             <View style={styles.codeBlock}>
-              <Text style={styles.codeText} testID={`vault-card-code-${account.id}`}>
+              <Text style={[styles.codeText, { color: animeColor }]} testID={`vault-card-code-${account.id}`}>
                 {reveal ? formatCode(code) : "•• ••••"}
               </Text>
               <Text style={styles.remaining}>{remaining}s remaining</Text>
             </View>
             <CircularTimer size={64} strokeWidth={5} progress={ratio} period={account.period}>
-              <Text style={styles.timerText}>{remaining}</Text>
+              <Text style={[styles.timerText, { color: animeColor }]}>{remaining}</Text>
             </CircularTimer>
           </View>
 
@@ -135,7 +154,7 @@ export const VaultCard = React.memo(function VaultCard({
             <Pressable
               testID={`vault-card-copy-${account.id}`}
               onPress={doCopy}
-              style={styles.pillPrimary}
+              style={[styles.pillPrimary, { backgroundColor: animeColor }]}
               accessibilityRole="button"
               accessibilityLabel={`Copy code for ${account.issuer}`}
             >
@@ -143,6 +162,7 @@ export const VaultCard = React.memo(function VaultCard({
               <Text style={styles.pillPrimaryText}>Copy</Text>
             </Pressable>
           </View>
+
         </GlassCard>
       </Pressable>
     </Animated.View>

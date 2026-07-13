@@ -43,6 +43,30 @@ const DEFAULT_THEMES: AnimeTheme[] = [
     accentColor: "#7209B7",
     isDark: true,
   },
+  {
+    id: "sakura",
+    name: "Sakura Blossom",
+    wallpaper: "https://images.alphacoders.com/135/1351140.jpeg",
+    primaryColor: "#FF85A2",
+    accentColor: "#F72585",
+    isDark: true,
+  },
+  {
+    id: "demon-slayer",
+    name: "Kimetsu",
+    wallpaper: "https://images.alphacoders.com/133/1335028.png",
+    primaryColor: "#2D6A4F",
+    accentColor: "#40916C",
+    isDark: true,
+  },
+  {
+    id: "tokyo-ghoul",
+    name: "Ghoul",
+    wallpaper: "https://images.alphacoders.com/133/1338837.png",
+    primaryColor: "#E63946",
+    accentColor: "#A8dadc",
+    isDark: true,
+  },
 ];
 
 interface Ctx {

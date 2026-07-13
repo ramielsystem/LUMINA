@@ -14,23 +14,17 @@
 - **Aesthetic:** Dark mode with Neon accents (Cyan, Pink, Purple).
 - **Wallpapers:** Support for dynamic anime wallpapers with blur overlay.
 - **Components:** Use `GlassCard.tsx` for all list items and containers.
+- **Visuals:** Neon glow effects for 2FA cards when linked to an anime.
+
+### Anime Hub
+- **Integration:** Use AniList GraphQL API for fetching data.
+- **Features:** Trending Animes, New Releases, and "My Anime List".
+- **Linking:** Each 2FA token can be associated with an anime ID from AniList.
 
 ### Stability & Security
-- **Scanner:** Always handle camera permissions and errors in `scan.tsx`.
-- **Biometrics:** Fallback to PIN must always be available if biometrics fail.
-- **State:** Use Riverpod-like patterns with React Context for 2FA and Anime lists.
-
-### Backend
-- **Framework:** Always use FastAPI for API endpoints.
-- **Validation:** Use Pydantic models for all request bodies and response schemas.
-- **Database:** Use `motor` for asynchronous MongoDB interactions.
-- **Environment:** Keep configuration in `.env` files and access via `python-dotenv`.
-- **Formatting:** Follow PEP 8 standards; use `black` and `isort` for formatting.
-
-### Security
-- **Encryption:** Never store raw passwords or master keys. Use `bcrypt` for hashing.
-- **Sensitive Data:** On mobile, sensitive data must be stored in `expo-secure-store`.
-- **Biometrics:** Use `expo-local-authentication` to protect sensitive app sections (Vault, Settings).
+- **Security:** Sensitive data in `expo-secure-store`.
+- **Biometrics:** `expo-local-authentication` for vault access.
+- **Performance:** Avoid heavy re-renders in the TOTP list.
 
 ### Internationalization
-- **Translations:** Add all user-facing strings to `frontend/src/i18n/translations/`. Use the `t()` function from the i18n context.
+- **Translations:** Add all strings to `frontend/src/i18n/translations/`.

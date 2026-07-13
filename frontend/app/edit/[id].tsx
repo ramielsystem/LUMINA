@@ -21,6 +21,8 @@ import { GlassCard } from "@/src/components/GlassCard";
 import { useLock } from "@/src/contexts/LockContext";
 import { useToast } from "@/src/components/Toast";
 import { VaultAccount } from "@/src/lib/vault";
+import { AnimeSearchModal } from "@/src/components/AnimeSearchModal";
+import { Anime } from "@/src/services/animeApi";
 
 export default function EditAccount() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -33,6 +35,8 @@ export default function EditAccount() {
   const [account, setAccount] = useState("");
   const [category, setCategory] = useState("Personal");
   const [favorite, setFavorite] = useState(false);
+  const [animeSearchVisible, setAnimeSearchVisible] = useState(false);
+  const [linkedAnime, setLinkedAnime] = useState<{ id: number; title: string; image: string; color?: string } | null>(null);
 
   useEffect(() => {
     if (acc) {
@@ -40,6 +44,14 @@ export default function EditAccount() {
       setAccount(acc.account);
       setCategory(acc.category);
       setFavorite(acc.favorite);
+      if (acc.animeId) {
+        setLinkedAnime({
+          id: acc.animeId,
+          title: acc.issuer, // We don't store the title separately, but we could
+          image: acc.animeTheme?.bannerImage || "",
+          color: acc.animeTheme?.primaryColor || undefined,
+        });
+      }
     }
   }, [acc]);
 
@@ -60,13 +72,35 @@ export default function EditAccount() {
     await updateVault((draft) => {
       draft.accounts = draft.accounts.map((a) =>
         a.id === acc.id
-          ? { ...a, issuer: issuer.trim() || a.issuer, account: account.trim(), category, favorite, updatedAt: Date.now() }
+          ? {
+              ...a,
+              issuer: issuer.trim() || a.issuer,
+              account: account.trim(),
+              category,
+              favorite,
+              animeId: linkedAnime?.id ?? null,
+              animeTheme: linkedAnime ? {
+                primaryColor: linkedAnime.color,
+                bannerImage: linkedAnime.image,
+              } : null,
+              updatedAt: Date.now()
+            }
           : a
       );
       return draft;
     });
     toast.show("Saved");
     router.back();
+  };
+
+  const handleSelectAnime = (anime: Anime) => {
+    setLinkedAnime({
+      id: anime.id,
+      title: anime.title.english || anime.title.romaji,
+      image: anime.bannerImage || anime.coverImage.extraLarge || anime.coverImage.large,
+      color: anime.coverImage.color,
+    });
+    setAnimeSearchVisible(false);
   };
 
   const remove = async () => {
@@ -137,7 +171,39 @@ export default function EditAccount() {
           </GlassCard>
 
           <GlassCard style={styles.card}>
+            <View style={styles.animeHeader}>
+              <Text style={styles.groupLabel}>Estética Anime</Text>
+              {linkedAnime && (
+                <Pressable onPress={() => setLinkedAnime(null)}>
+                  <Text style={[styles.deleteText, { fontSize: 12 }]}>Remover</Text>
+                </Pressable>
+              )}
+            </View>
+            
+            {linkedAnime ? (
+              <View style={styles.linkedAnimeInfo}>
+                <Image source={{ uri: linkedAnime.image }} style={styles.animeBannerPreview} />
+                <View style={styles.animeOverlay}>
+                  <Text style={styles.animeLinkedTitle} numberOfLines={1}>{linkedAnime.title}</Text>
+                  {linkedAnime.color && (
+                    <View style={styles.colorIndicator}>
+                      <View style={[styles.colorDot, { backgroundColor: linkedAnime.color }]} />
+                      <Text style={styles.colorText}>Cor temática ativa</Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+            ) : (
+              <Pressable style={styles.linkAnimeBtn} onPress={() => setAnimeSearchVisible(true)}>
+                <Ionicons name="link" size={20} color={colors.primary} />
+                <Text style={styles.linkAnimeText}>Vincular a um Anime</Text>
+              </Pressable>
+            )}
+          </GlassCard>
+
+          <GlassCard style={styles.card}>
             <Text style={styles.groupLabel}>TOTP parameters</Text>
+
             <ReadRow label="Digits" value={String(acc.digits)} />
             <ReadRow label="Period" value={`${acc.period}s`} />
             <ReadRow label="Algorithm" value={acc.algorithm} />

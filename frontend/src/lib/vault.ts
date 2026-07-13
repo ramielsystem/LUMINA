@@ -15,6 +15,11 @@ export interface VaultAccount {
   favorite: boolean;
   category: string; // "Personal" | "Work" | "Crypto" | "Gaming" | custom
   iconUrl?: string | null;
+  animeId?: number | null;
+  animeTheme?: {
+    primaryColor?: string;
+    bannerImage?: string;
+  } | null;
   createdAt: number;
   updatedAt: number;
 }
