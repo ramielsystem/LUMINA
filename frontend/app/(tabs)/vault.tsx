@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   FlatList,
   Pressable,
@@ -120,6 +120,20 @@ export default function VaultScreen() {
     }
   };
 
+  const renderItem = React.useCallback(
+    ({ item }: { item: VaultAccount }) => (
+      <VaultCard
+        account={item}
+        now={now}
+        hidden={hideCodes}
+        onToggleFavorite={toggleFavorite}
+        onPress={(id) => router.push({ pathname: "/edit/[id]", params: { id } })}
+        onCopy={onCopy}
+      />
+    ),
+    [now, hideCodes, toggleFavorite, onCopy]
+  );
+
   return (
     <SafeAreaView style={styles.container} edges={["top"]} testID="vault-screen">
       <View style={styles.header}>
@@ -230,16 +244,11 @@ export default function VaultScreen() {
             paddingBottom: BOTTOM_NAV_HEIGHT + insets.bottom + 24,
             gap: 14,
           }}
-          renderItem={({ item }) => (
-            <VaultCard
-              account={item}
-              now={now}
-              hidden={hideCodes}
-              onToggleFavorite={toggleFavorite}
-              onPress={(id) => router.push({ pathname: "/edit/[id]", params: { id } })}
-              onCopy={onCopy}
-            />
-          )}
+          renderItem={renderItem}
+          removeClippedSubviews={true}
+          maxToRenderPerBatch={10}
+          windowSize={5}
+          initialNumToRender={8}
         />
       )}
 

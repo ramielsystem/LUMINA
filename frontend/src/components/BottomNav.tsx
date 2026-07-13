@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View, Platform } from "react-native";
 import { usePathname, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors } from "@/src/lib/theme";
 
 type Tab = {
-  href: "/(tabs)/vault" | "/(tabs)/categories" | "/(tabs)/settings";
+  href: "/(tabs)/vault" | "/(tabs)/categories" | "/(tabs)/anime" | "/(tabs)/settings";
   icon: keyof typeof Ionicons.glyphMap;
   activeIcon: keyof typeof Ionicons.glyphMap;
   label: string;
@@ -15,6 +15,7 @@ type Tab = {
 
 const TABS: Tab[] = [
   { href: "/(tabs)/vault", icon: "shield-outline", activeIcon: "shield", label: "Vault", match: "vault" },
+  { href: "/(tabs)/anime", icon: "tv-outline", activeIcon: "tv", label: "Anime", match: "anime" },
   { href: "/(tabs)/categories", icon: "folder-outline", activeIcon: "folder", label: "Folders", match: "categories" },
   { href: "/(tabs)/settings", icon: "settings-outline", activeIcon: "settings", label: "Settings", match: "settings" },
 ];
@@ -24,9 +25,17 @@ export function BottomNav() {
   const router = useRouter();
   const pathname = usePathname();
 
+  const isWeb = Platform.OS === "web";
+  const isAndroid = Platform.OS === "android";
+  const skipBlur = isWeb || isAndroid;
+
   return (
     <View style={[styles.wrap, { paddingBottom: Math.max(insets.bottom, 8) }]} testID="bottom-nav">
-      <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
+      {skipBlur ? (
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(10, 10, 12, 0.95)" }]} />
+      ) : (
+        <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
+      )}
       <View style={[StyleSheet.absoluteFill, styles.tint]} />
       <View style={[StyleSheet.absoluteFill, styles.topBorder]} pointerEvents="none" />
       <View style={styles.row}>

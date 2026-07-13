@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet, View, ViewStyle } from "react-native";
+import { Platform, StyleSheet, View, ViewStyle } from "react-native";
 import { BlurView } from "expo-blur";
 import { colors, radii } from "@/src/lib/theme";
 
@@ -12,9 +12,20 @@ interface Props {
 }
 
 export function GlassCard({ children, intensity = 40, style, borderless, testID }: Props) {
+  // Performance optimization: BlurView can be very expensive on Android and Web
+  // especially when used in lists. We use a simple semi-transparent background
+  // for these platforms to ensure smooth interaction.
+  const isWeb = Platform.OS === "web";
+  const isAndroid = Platform.OS === "android";
+  const skipBlur = isWeb || isAndroid;
+  
   return (
     <View testID={testID} style={[styles.wrapper, style]}>
-      <BlurView intensity={intensity} tint="dark" style={StyleSheet.absoluteFill} />
+      {skipBlur ? (
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(20, 20, 20, 0.9)" }]} />
+      ) : (
+        <BlurView intensity={intensity} tint="dark" style={StyleSheet.absoluteFill} />
+      )}
       <View style={[StyleSheet.absoluteFill, styles.tint]} />
       {!borderless && <View style={[StyleSheet.absoluteFill, styles.border]} pointerEvents="none" />}
       <View style={styles.content}>{children}</View>

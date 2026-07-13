@@ -4,21 +4,21 @@
 - **Frontend:** React Native with Expo (SDK 54) using TypeScript.
 - **Routing:** Expo Router (File-based navigation) in `frontend/app/`.
 - **Backend:** Python FastAPI for the API server.
-- **Database:** MongoDB (using Motor for async operations and Pymongo).
-- **Styling:** Native React Native components with `react-native-reanimated` and `expo-blur`.
-- **Security:** `expo-secure-store` for sensitive keys and `expo-local-authentication` for biometrics.
-- **Authentication:** JWT-based auth with `pyjwt` and `bcrypt` on the backend.
-- **Cryptography:** `otpauth` for TOTP generation and `crypto-js` for client-side encryption.
+- **Database:** MongoDB (using Motor for async operations).
+- **Styling:** `react-native-reanimated` for animations and `expo-blur` for Glassmorphism.
+- **External APIs:** AniList API (GraphQL) for Anime Hub.
 
 ## Development Rules
 
-### Frontend
-- **Routing:** All new screens must be added to `frontend/app/`. Use `_layout.tsx` for shared navigation patterns.
-- **Components:** Create reusable components in `frontend/src/components/`. Use functional components with hooks.
-- **Styling:** Prioritize `react-native-reanimated` for animations and transitions. Use `expo-linear-gradient` for backgrounds as per design guidelines.
-- **State Management:** Use React Context (e.g., `AuthContext.tsx`, `LockContext.tsx`) for global app state.
-- **Storage:** Use `expo-secure-store` for encryption keys and `async-storage` for non-sensitive persistent data.
-- **Icons:** Use `@expo/vector-icons` for all UI icons.
+### Anime Theme & UI
+- **Aesthetic:** Dark mode with Neon accents (Cyan, Pink, Purple).
+- **Wallpapers:** Support for dynamic anime wallpapers with blur overlay.
+- **Components:** Use `GlassCard.tsx` for all list items and containers.
+
+### Stability & Security
+- **Scanner:** Always handle camera permissions and errors in `scan.tsx`.
+- **Biometrics:** Fallback to PIN must always be available if biometrics fail.
+- **State:** Use Riverpod-like patterns with React Context for 2FA and Anime lists.
 
 ### Backend
 - **Framework:** Always use FastAPI for API endpoints.

@@ -28,7 +28,14 @@ function formatCode(code: string): string {
   return code;
 }
 
-export function VaultCard({ account, now, hidden, onToggleFavorite, onPress, onCopy }: Props) {
+export const VaultCard = React.memo(function VaultCard({
+  account,
+  now,
+  hidden,
+  onToggleFavorite,
+  onPress,
+  onCopy,
+}: Props) {
   const [reveal, setReveal] = useState(!hidden);
   const scale = useSharedValue(1);
   const toast = useToast();
@@ -52,7 +59,7 @@ export function VaultCard({ account, now, hidden, onToggleFavorite, onPress, onC
     } catch (e) {
       return "------";
     }
-  }, [account, now]);
+  }, [account.secret, account.digits, account.period, account.algorithm, account.steam, now]);
 
   const remaining = secondsRemaining(account.period, now);
   const ratio = progressRatio(account.period, now);
@@ -70,7 +77,7 @@ export function VaultCard({ account, now, hidden, onToggleFavorite, onPress, onC
   };
 
   return (
-    <Animated.View entering={FadeIn.duration(280)} style={animStyle}>
+    <Animated.View style={animStyle}>
       <Pressable
         testID={`vault-card-${account.id}`}
         onPress={() => onPress?.(account.id)}
@@ -140,11 +147,11 @@ export function VaultCard({ account, now, hidden, onToggleFavorite, onPress, onC
       </Pressable>
     </Animated.View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   card: {
-    padding: 20,
+    padding: 0, // GlassCard already has padding: 20
   },
   headerRow: {
     flexDirection: "row",

@@ -18,6 +18,7 @@ import { useToast } from "@/src/components/Toast";
 export default function ScanScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
+  const [isCameraActive, setIsCameraActive] = useState(true);
   const router = useRouter();
   const { updateVault } = useLock();
   const toast = useToast();
@@ -29,8 +30,16 @@ export default function ScanScreen() {
     }
   }, [permission, requestPermission]);
 
+  // Handle camera mount/unmount to prevent memory leaks and crashes
+  useEffect(() => {
+    setIsCameraActive(true);
+    return () => {
+      setIsCameraActive(false);
+    };
+  }, []);
+
   const onBarcode = async ({ data }: { data: string }) => {
-    if (scanned) return;
+    if (scanned || !isCameraActive) return;
     if (lastCode.current === data) return;
     lastCode.current = data;
     try {
@@ -67,6 +76,7 @@ export default function ScanScreen() {
     } catch (e) {
       toast.show("Not a valid otpauth QR", "error");
       lastCode.current = null;
+      setScanned(false);
     }
   };
 
@@ -88,7 +98,7 @@ export default function ScanScreen() {
         }
       />
       <View style={styles.cameraWrap}>
-        {permission?.granted ? (
+        {permission?.granted && isCameraActive ? (
           <CameraView
             style={StyleSheet.absoluteFill}
             facing="back"
@@ -96,6 +106,7 @@ export default function ScanScreen() {
             onBarcodeScanned={scanned ? undefined : onBarcode}
           />
         ) : (
+
           <View style={styles.permissionWrap} testID="scan-permission">
             <Ionicons name="camera-outline" size={44} color={colors.primary} />
             <Text style={styles.permissionTitle}>Camera access needed</Text>

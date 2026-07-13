@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { View } from "react-native";
+import { View, Platform } from "react-native";
 import Svg, { Circle, Defs, LinearGradient, Stop } from "react-native-svg";
 import Animated, {
   useAnimatedProps,
@@ -11,16 +11,7 @@ import { colors } from "@/src/lib/theme";
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
-interface Props {
-  size?: number;
-  strokeWidth?: number;
-  progress: number; // 0..1 (1 = full)
-  period: number; // seconds — used to smooth the animation duration
-  children?: React.ReactNode;
-  testID?: string;
-}
-
-export function CircularTimer({
+export const CircularTimer = React.memo(function CircularTimer({
   size = 64,
   strokeWidth = 6,
   progress,
@@ -28,25 +19,27 @@ export function CircularTimer({
   children,
   testID,
 }: Props) {
+  const isWeb = Platform.OS === "web";
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const anim = useSharedValue(progress);
 
   useEffect(() => {
-    // Smoothly animate toward the new progress value. The timing matches how
-    // long the code has left, giving a truly smooth 1s-per-second sweep.
-    anim.value = withTiming(progress, {
-      duration: 1000,
-      easing: Easing.linear,
-    });
-  }, [progress, anim]);
+    if (isWeb) {
+      anim.value = progress;
+    } else {
+      anim.value = withTiming(progress, {
+        duration: 1000,
+        easing: Easing.linear,
+      });
+    }
+  }, [progress, isWeb]);
 
   const animatedProps = useAnimatedProps(() => ({
     strokeDashoffset: circumference * (1 - anim.value),
   }));
 
   const gradientId = `grad-${size}`;
-
   const nearEnd = progress < 0.2;
 
   return (
@@ -58,7 +51,6 @@ export function CircularTimer({
             <Stop offset="1" stopColor={nearEnd ? colors.danger : colors.secondary} stopOpacity="1" />
           </LinearGradient>
         </Defs>
-        {/* Background ring */}
         <Circle
           cx={size / 2}
           cy={size / 2}
@@ -67,7 +59,6 @@ export function CircularTimer({
           strokeWidth={strokeWidth}
           fill="transparent"
         />
-        {/* Progress ring */}
         <AnimatedCircle
           cx={size / 2}
           cy={size / 2}
@@ -85,4 +76,4 @@ export function CircularTimer({
       {children}
     </View>
   );
-}
+});
