@@ -75,12 +75,14 @@ interface Ctx {
   setTheme: (id: string) => Promise<void>;
   customWallpaper: string | null;
   setCustomWallpaper: (uri: string | null) => Promise<void>;
+  setDynamicTheme: (theme: Partial<AnimeTheme>) => Promise<void>;
 }
 
 const ThemeContext = createContext<Ctx | null>(null);
 
 const THEME_KEY = "@lumina_theme_id";
 const WALLPAPER_KEY = "@lumina_custom_wallpaper";
+const DYNAMIC_THEME_KEY = "@lumina_dynamic_theme";
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [currentTheme, setCurrentTheme] = useState<AnimeTheme>(DEFAULT_THEMES[0]);
@@ -90,11 +92,15 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     async function load() {
       const savedId = await AsyncStorage.getItem(THEME_KEY);
       const savedWall = await AsyncStorage.getItem(WALLPAPER_KEY);
+      const savedDynamic = await AsyncStorage.getItem(DYNAMIC_THEME_KEY);
       
-      if (savedId) {
+      if (savedDynamic) {
+        setCurrentTheme(JSON.parse(savedDynamic));
+      } else if (savedId) {
         const found = DEFAULT_THEMES.find(t => t.id === savedId);
         if (found) setCurrentTheme(found);
       }
+      
       if (savedWall) {
         setCustomWallpaperState(savedWall);
       }
@@ -107,7 +113,20 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     if (found) {
       setCurrentTheme(found);
       await AsyncStorage.setItem(THEME_KEY, id);
+      await AsyncStorage.removeItem(DYNAMIC_THEME_KEY);
     }
+  };
+
+  const setDynamicTheme = async (theme: Partial<AnimeTheme>) => {
+    const newTheme: AnimeTheme = {
+      ...DEFAULT_THEMES[0],
+      ...theme,
+      id: "dynamic",
+      name: "Custom Anime",
+    };
+    setCurrentTheme(newTheme);
+    await AsyncStorage.setItem(DYNAMIC_THEME_KEY, JSON.stringify(newTheme));
+    await AsyncStorage.removeItem(THEME_KEY);
   };
 
   const setCustomWallpaper = async (uri: string | null) => {
@@ -120,7 +139,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <ThemeContext.Provider value={{ currentTheme, themes: DEFAULT_THEMES, setTheme, customWallpaper, setCustomWallpaper }}>
+    <ThemeContext.Provider value={{ currentTheme, themes: DEFAULT_THEMES, setTheme, customWallpaper, setCustomWallpaper, setDynamicTheme }}>
       {children}
     </ThemeContext.Provider>
   );
