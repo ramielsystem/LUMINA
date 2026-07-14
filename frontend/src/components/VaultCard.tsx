@@ -89,7 +89,10 @@ export const VaultCard = React.memo(function VaultCard({
         onLongPress={() => onToggleFavorite?.(account.id)}
         delayLongPress={350}
       >
-        <GlassCard style={[styles.card, animeBanner ? { overflow: "hidden" } : {}]}>
+        <GlassCard
+          style={[styles.card, animeBanner ? { overflow: "hidden" } : {}]}
+          glowColor={account.animeTheme ? animeColor : undefined}
+        >
           {animeBanner && (
             <Image
               source={{ uri: animeBanner }}

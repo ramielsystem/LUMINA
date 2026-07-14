@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors } from "@/src/lib/theme";
+import { useAppTheme } from "../contexts/ThemeContext";
 
 type Tab = {
   href: "/(tabs)/vault" | "/(tabs)/categories" | "/(tabs)/anime" | "/(tabs)/settings";
@@ -24,6 +25,7 @@ export function BottomNav() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const pathname = usePathname();
+  const { currentTheme } = useAppTheme();
 
   const isWeb = Platform.OS === "web";
   const isAndroid = Platform.OS === "android";
@@ -52,9 +54,9 @@ export function BottomNav() {
               <Ionicons
                 name={active ? t.activeIcon : t.icon}
                 size={22}
-                color={active ? colors.primary : colors.textMuted}
+                color={active ? currentTheme.primaryColor : colors.textMuted}
               />
-              <Text style={[styles.tabLabel, active && styles.tabLabelActive]}>{t.label}</Text>
+              <Text style={[styles.tabLabel, active && { color: currentTheme.primaryColor }]}>{t.label}</Text>
             </Pressable>
           );
         })}
