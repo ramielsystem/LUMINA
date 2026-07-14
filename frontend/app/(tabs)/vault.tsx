@@ -258,12 +258,13 @@ export default function VaultScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.base },
+  container: { flex: 1, backgroundColor: "transparent" },
   header: {
     paddingHorizontal: 24,
     paddingTop: 8,
     paddingBottom: 8,
     flexDirection: "row",
+
     alignItems: "center",
     justifyContent: "space-between",
   },

@@ -169,7 +169,7 @@ function Feature({ icon, text }: { icon: keyof typeof Ionicons.glyphMap; text: s
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.base },
+  container: { flex: 1, backgroundColor: "transparent" },
   scroll: { flexGrow: 1, paddingHorizontal: 24, paddingVertical: 32 },
   center: { flex: 1, justifyContent: "center", alignItems: "center", gap: 16 },
   badge: {

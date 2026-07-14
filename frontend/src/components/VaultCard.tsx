@@ -30,11 +30,16 @@ function formatCode(code: string): string {
   return code;
 }
 
+function safeColor(value: string | null | undefined, fallback: string) {
+  return typeof value === "string" && /^#[0-9a-fA-F]{6}$/.test(value) ? value : fallback;
+}
+
 export const VaultCard = React.memo(function VaultCard({
   account,
   now,
   hidden,
   onToggleFavorite,
+
   onPress,
   onCopy,
 }: Props) {
@@ -43,8 +48,9 @@ export const VaultCard = React.memo(function VaultCard({
   const toast = useToast();
   const { currentTheme } = useAppTheme();
 
-  const animeColor = account.animeTheme?.primaryColor || currentTheme.primaryColor;
-  const animeBanner = account.animeTheme?.bannerImage;
+  const animeColor = safeColor(account.animeTheme?.primaryColor, currentTheme.primaryColor);
+  const animeBanner = typeof account.animeTheme?.bannerImage === "string" ? account.animeTheme.bannerImage : undefined;
+  const accentColor = safeColor(currentTheme.accentColor, colors.secondary);
 
   useEffect(() => {
     setReveal(!hidden);
@@ -156,10 +162,11 @@ export const VaultCard = React.memo(function VaultCard({
               progress={ratio}
               period={account.period}
               colorStart={animeColor}
-              colorEnd={currentTheme.accentColor}
+              colorEnd={accentColor}
             >
               <Text style={[styles.timerText, { color: animeColor }]}>{remaining}</Text>
             </CircularTimer>
+
           </View>
 
           <View style={styles.actions}>

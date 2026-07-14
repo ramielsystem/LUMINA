@@ -135,7 +135,7 @@ export default function Lock() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.base, alignItems: "center", justifyContent: "space-around", paddingVertical: 32 },
+  container: { flex: 1, backgroundColor: "transparent", alignItems: "center", justifyContent: "space-around", paddingVertical: 32 },
   header: { alignItems: "center", gap: 6 },
   brand: { ...typography.h1, color: colors.textPrimary, letterSpacing: 6, marginTop: 8 },
   subtitle: { color: colors.textSecondary, fontSize: 14, letterSpacing: 0.3 },

@@ -42,11 +42,22 @@ function getAnimeCover(anime: Anime) {
 }
 
 function getAnimeColor(anime: Anime, fallback = FALLBACK_COLOR) {
-  return anime.coverImage?.color || fallback;
+  const color = anime.coverImage?.color;
+  return typeof color === "string" && /^#[0-9a-fA-F]{6}$/.test(color) ? color : fallback;
+}
+
+function formatAiring(seconds?: number) {
+  if (!seconds) return null;
+  const days = Math.floor(seconds / 86400);
+  if (days > 0) return `${days}d`;
+  const hours = Math.floor(seconds / 3600);
+  if (hours > 0) return `${hours}h`;
+  return `${Math.max(1, Math.floor(seconds / 60))}m`;
 }
 
 export default function AnimeHubScreen() {
   const { vault, updateVault } = useLock();
+
   const toast = useToast();
   const { currentTheme, setDynamicTheme } = useAppTheme();
   const { setWallpaper, setBlurIntensity } = useWallpaper();
@@ -64,10 +75,27 @@ export default function AnimeHubScreen() {
     [vault?.accounts]
   );
 
+  const allAnime = useMemo(() => {
+    const unique = new Map<number, Anime>();
+    [...trending, ...seasonReleases].forEach((anime) => unique.set(anime.id, anime));
+    return Array.from(unique.values());
+  }, [trending, seasonReleases]);
+
+  const upcomingEpisodes = useMemo(
+    () => allAnime.filter((anime) => anime.nextAiringEpisode).slice(0, 8),
+    [allAnime]
+  );
+
+  const actionPicks = useMemo(
+    () => allAnime.filter((anime) => anime.genres?.includes("Action")).slice(0, 8),
+    [allAnime]
+  );
+
   const heroAnime = trending[0] || seasonReleases[0] || null;
   const themeColor = heroAnime ? getAnimeColor(heroAnime, currentTheme.primaryColor) : currentTheme.primaryColor;
 
   const loadAnime = async () => {
+
     try {
       const [trendingData, seasonData] = await Promise.all([
         animeService.getTrending(1, 8),
@@ -123,20 +151,26 @@ export default function AnimeHubScreen() {
     setAccountPickerVisible(true);
   };
 
-  const handleLinkToAccount = async (accountId: string) => {
-    if (!selectedAnime) return;
+  const getSelectedAnimeTheme = () => {
+    if (!selectedAnime) return null;
+    return {
+      animeId: selectedAnime.id,
+      animeTheme: {
+        primaryColor: getAnimeColor(selectedAnime, currentTheme.primaryColor),
+        bannerImage: getAnimeImage(selectedAnime) || undefined,
+      },
+    };
+  };
 
-    const animeColor = getAnimeColor(selectedAnime, currentTheme.primaryColor);
-    const animeImage = getAnimeImage(selectedAnime);
+  const handleLinkToAccount = async (accountId: string) => {
+    const theme = getSelectedAnimeTheme();
+    if (!theme) return;
 
     await updateVault((draft) => {
       const account = draft.accounts.find((item) => item.id === accountId);
       if (account) {
-        account.animeId = selectedAnime.id;
-        account.animeTheme = {
-          primaryColor: animeColor,
-          bannerImage: animeImage || undefined,
-        };
+        account.animeId = theme.animeId;
+        account.animeTheme = theme.animeTheme;
         account.updatedAt = Date.now();
       }
       return draft;
@@ -146,7 +180,28 @@ export default function AnimeHubScreen() {
     toast.show("Conta vinculada com glow neon!");
   };
 
+  const handleLinkToAllAccounts = async () => {
+    const theme = getSelectedAnimeTheme();
+    if (!theme || !(vault?.accounts?.length)) return;
+
+    setAccountPickerVisible(false);
+    toast.show("Aplicando tema em todas as contas...", "info");
+
+    await updateVault((draft) => {
+      draft.accounts = draft.accounts.map((account) => ({
+        ...account,
+        animeId: theme.animeId,
+        animeTheme: theme.animeTheme,
+        updatedAt: Date.now(),
+      }));
+      return draft;
+    });
+
+    toast.show("Todas as contas receberam o mesmo tema!");
+  };
+
   const renderHero = () => {
+
     if (!heroAnime) return null;
 
     const title = getAnimeTitle(heroAnime);
@@ -209,14 +264,20 @@ export default function AnimeHubScreen() {
             <Text style={styles.animeTitle} numberOfLines={2}>{getAnimeTitle(item)}</Text>
             <View style={styles.metaRow}>
               <Text style={[styles.scoreText, { color: animeColor }]}>⭐ {score}</Text>
-              {item.status === "RELEASING" && (
+              {item.nextAiringEpisode ? (
+                <View style={[styles.countdownBadge, { borderColor: animeColor }]}>
+                  <Ionicons name="time" size={10} color={animeColor} />
+                  <Text style={[styles.countdownText, { color: animeColor }]}>{formatAiring(item.nextAiringEpisode.timeUntilAiring)}</Text>
+                </View>
+              ) : item.status === "RELEASING" ? (
                 <View style={styles.airingBadge}>
                   <View style={styles.airingDot} />
                   <Text style={styles.airingText}>ON</Text>
                 </View>
-              )}
+              ) : null}
             </View>
           </View>
+
         </View>
       </Pressable>
     );
@@ -274,9 +335,12 @@ export default function AnimeHubScreen() {
           </View>
 
           {renderSection("Em Alta Agora 🔥", trending, true)}
+          {upcomingEpisodes.length > 0 && renderSection("Próximos Episódios ⏱️", upcomingEpisodes)}
+          {actionPicks.length > 0 && renderSection("Modo Batalha ⚔️", actionPicks)}
           {renderSection("Lançamentos da Temporada 📺", seasonReleases)}
 
           <View style={styles.linkedSection}>
+
             <Text style={[styles.sectionTitle, { color: currentTheme.primaryColor }]}>Cofre Otaku ✨</Text>
             <GlassCard style={styles.linkedCard} glowColor={linkedAccounts[0]?.animeTheme?.primaryColor}>
               {linkedAccounts.length ? (
@@ -321,8 +385,15 @@ export default function AnimeHubScreen() {
                 <Ionicons name="close" size={24} color={colors.textPrimary} />
               </Pressable>
             </View>
+            {(vault?.accounts?.length || 0) > 0 && (
+              <Pressable style={[styles.linkAllButton, { backgroundColor: selectedAnime ? getAnimeColor(selectedAnime, currentTheme.primaryColor) : currentTheme.primaryColor }]} onPress={handleLinkToAllAccounts}>
+                <Ionicons name="layers" size={18} color={colors.base} />
+                <Text style={styles.linkAllText}>Aplicar este tema em todas</Text>
+              </Pressable>
+            )}
             <FlatList
               data={vault?.accounts || []}
+
               keyExtractor={(item) => item.id}
               renderItem={({ item }) => (
                 <Pressable style={styles.accountItem} onPress={() => handleLinkToAccount(item.id)}>
@@ -554,8 +625,23 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: "900",
   },
+  countdownBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: radii.sm,
+    borderWidth: 1,
+    backgroundColor: "rgba(255,255,255,0.08)",
+  },
+  countdownText: {
+    fontSize: 10,
+    fontWeight: "900",
+  },
   linkedSection: {
     marginTop: spacing.lg,
+
     paddingHorizontal: spacing.md,
   },
   linkedCard: {
@@ -627,8 +713,22 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     marginTop: 2,
   },
+  linkAllButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 13,
+    borderRadius: radii.pill,
+    marginBottom: spacing.md,
+  },
+  linkAllText: {
+    color: colors.base,
+    fontWeight: "900",
+  },
   accountItem: {
     flexDirection: "row",
+
     alignItems: "center",
     paddingVertical: spacing.md,
     borderBottomWidth: 1,

@@ -87,7 +87,7 @@ export default function HistoryScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.base },
+  container: { flex: 1, backgroundColor: "transparent" },
   clearBtn: { width: 40, height: 40, alignItems: "center", justifyContent: "center", borderRadius: 20, backgroundColor: "rgba(255,59,48,0.10)", borderWidth: 1, borderColor: "rgba(255,59,48,0.3)" },
   empty: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, padding: 32 },
   emptyBadge: { width: 80, height: 80, borderRadius: 40, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(0, 240, 255, 0.10)", borderColor: colors.neonBorder, borderWidth: 1, marginBottom: 8 },

@@ -238,7 +238,7 @@ function Segmented({
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.base },
+  container: { flex: 1, backgroundColor: "transparent" },
   scroll: { padding: 20, gap: 16, paddingBottom: 40 },
   card: { gap: 16 },
   groupLabel: { color: colors.textMuted, fontSize: 12, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase" },

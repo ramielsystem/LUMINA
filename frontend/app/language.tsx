@@ -73,7 +73,7 @@ export default function LanguageScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.base },
+  container: { flex: 1, backgroundColor: "transparent" },
   searchWrap: {
     marginHorizontal: 20,
     marginTop: 4,

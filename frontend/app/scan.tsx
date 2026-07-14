@@ -164,7 +164,7 @@ function NeonCorner({ style }: { style?: object }) {
 const CUTOUT = 260;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.base },
+  container: { flex: 1, backgroundColor: "transparent" },
   manualBtn: { width: 40, height: 40, alignItems: "center", justifyContent: "center", borderRadius: 20, backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: colors.glassBorder },
   cameraWrap: { flex: 1, backgroundColor: "#000", overflow: "hidden" },
   permissionWrap: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, padding: 32 },

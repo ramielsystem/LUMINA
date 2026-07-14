@@ -59,7 +59,7 @@ export default function AddScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.base },
+  container: { flex: 1, backgroundColor: "transparent" },
   body: { padding: 20, gap: 16 },
   optionWrap: { borderRadius: radii.xl, overflow: "hidden" },
   option: { padding: 24, gap: 10 },

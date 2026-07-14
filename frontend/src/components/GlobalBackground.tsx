@@ -1,16 +1,19 @@
 import React from "react";
 import { StyleSheet, View, Image, Platform } from "react-native";
+import { usePathname } from "expo-router";
 import { BlurView } from "expo-blur";
 import { useWallpaper } from "../contexts/WallpaperContext";
 import { useAppTheme } from "../contexts/ThemeContext";
 import { colors } from "../lib/theme";
 
 export function GlobalBackground() {
+  const pathname = usePathname();
   const { wallpaperUrl, blurIntensity } = useWallpaper();
   const { currentTheme, customWallpaper } = useAppTheme();
+  const settingsScreen = pathname?.includes("settings");
   
   // Prioritize WallpaperContext URL, then custom wallpaper from theme, then theme wallpaper
-  const wallpaper = wallpaperUrl || customWallpaper || currentTheme.wallpaper;
+  const wallpaper = settingsScreen ? null : wallpaperUrl || customWallpaper || currentTheme.wallpaper;
 
   if (!wallpaper) {
     return <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.base }]} />;

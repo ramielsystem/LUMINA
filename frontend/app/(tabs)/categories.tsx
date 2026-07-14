@@ -17,8 +17,10 @@ export default function CategoriesScreen() {
   const toast = useToast();
   const [modalOpen, setModalOpen] = useState(false);
   const [newName, setNewName] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const rows = useMemo(() => {
+
     const cats = vault?.categories ?? [];
     return cats.map((name) => {
       const count = (vault?.accounts ?? []).filter((a) => a.category === name).length;
@@ -28,19 +30,29 @@ export default function CategoriesScreen() {
 
   const addCategory = async () => {
     const name = newName.trim();
-    if (!name) return;
+    if (!name || saving) return;
     if ((vault?.categories ?? []).some((c) => c.toLowerCase() === name.toLowerCase())) {
-      toast.show("Category already exists", "error");
+      toast.show("Essa pasta já existe", "error");
       return;
     }
-    await updateVault((draft) => {
-      draft.categories = [...draft.categories, name];
-      return draft;
-    });
+
+    setSaving(true);
     setNewName("");
     setModalOpen(false);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    toast.show(`Added "${name}"`);
+    toast.show(`Criando pasta "${name}"...`, "info");
+
+    try {
+      await updateVault((draft) => {
+        draft.categories = [...draft.categories, name];
+        return draft;
+      });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      toast.show(`Pasta "${name}" criada`);
+    } catch {
+      toast.show("Não consegui criar a pasta agora", "error");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const removeCategory = async (name: string) => {
@@ -119,11 +131,12 @@ export default function CategoriesScreen() {
               <Pressable testID="category-cancel" onPress={() => setModalOpen(false)} style={styles.btnGhost}>
                 <Text style={styles.btnGhostText}>Cancel</Text>
               </Pressable>
-              <Pressable testID="category-save" onPress={addCategory} style={styles.btnPrimary}>
-                <Text style={styles.btnPrimaryText}>Add</Text>
+              <Pressable testID="category-save" onPress={addCategory} style={[styles.btnPrimary, saving && styles.btnDisabled]} disabled={saving}>
+                <Text style={styles.btnPrimaryText}>{saving ? "Criando..." : "Add"}</Text>
               </Pressable>
             </View>
           </View>
+
         </KeyboardAvoidingView>
       </Modal>
 
@@ -133,10 +146,11 @@ export default function CategoriesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.base },
+  container: { flex: 1, backgroundColor: "transparent" },
   header: {
     paddingHorizontal: 24,
     paddingTop: 8,
+
     paddingBottom: 4,
     flexDirection: "row",
     alignItems: "center",
@@ -201,6 +215,9 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: radii.pill,
     backgroundColor: colors.primary,
+  },
+  btnDisabled: {
+    opacity: 0.55,
   },
   btnPrimaryText: { color: colors.base, fontWeight: "700" },
 });

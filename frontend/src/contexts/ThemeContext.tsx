@@ -84,8 +84,22 @@ const THEME_KEY = "@lumina_theme_id";
 const WALLPAPER_KEY = "@lumina_custom_wallpaper";
 const DYNAMIC_THEME_KEY = "@lumina_dynamic_theme";
 
+function safeColor(value: string | undefined, fallback: string) {
+  return typeof value === "string" && /^#[0-9a-fA-F]{6}$/.test(value) ? value : fallback;
+}
+
+function normalizeTheme(theme: AnimeTheme): AnimeTheme {
+  return {
+    ...theme,
+    primaryColor: safeColor(theme.primaryColor, DEFAULT_THEMES[0].primaryColor),
+    accentColor: safeColor(theme.accentColor, DEFAULT_THEMES[0].accentColor),
+    wallpaper: typeof theme.wallpaper === "string" ? theme.wallpaper : null,
+  };
+}
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [currentTheme, setCurrentTheme] = useState<AnimeTheme>(DEFAULT_THEMES[0]);
+
   const [customWallpaper, setCustomWallpaperState] = useState<string | null>(null);
 
   useEffect(() => {
@@ -96,7 +110,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       
       if (savedDynamic) {
         try {
-          setCurrentTheme(JSON.parse(savedDynamic));
+          setCurrentTheme(normalizeTheme(JSON.parse(savedDynamic)));
         } catch {
           await AsyncStorage.removeItem(DYNAMIC_THEME_KEY);
         }
@@ -104,7 +118,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         const found = DEFAULT_THEMES.find(t => t.id === savedId);
         if (found) setCurrentTheme(found);
       }
-      
+
       if (savedWall) {
         setCustomWallpaperState(savedWall);
       }
@@ -123,12 +137,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   };
 
   const setDynamicTheme = async (theme: Partial<AnimeTheme>) => {
-    const newTheme: AnimeTheme = {
+    const newTheme = normalizeTheme({
       ...DEFAULT_THEMES[0],
       id: "dynamic",
       name: "Custom Anime",
       ...theme,
-    };
+    });
     setCurrentTheme(newTheme);
     await AsyncStorage.setItem(DYNAMIC_THEME_KEY, JSON.stringify(newTheme));
     await AsyncStorage.removeItem(THEME_KEY);
