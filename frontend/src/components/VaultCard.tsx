@@ -97,27 +97,39 @@ export const VaultCard = React.memo(function VaultCard({
           {animeBanner && (
             <Image
               source={{ uri: animeBanner }}
-              style={[StyleSheet.absoluteFill, { opacity: 0.25 }]}
+              style={[StyleSheet.absoluteFill, { opacity: 0.22 }]}
               resizeMode="cover"
+              resizeMethod="resize"
+              fadeDuration={0}
             />
           )}
           {animeBanner && (
             <LinearGradient
-              colors={["rgba(0,0,0,0.6)", "rgba(0,0,0,0.9)"]}
+              colors={["rgba(0,0,0,0.55)", "rgba(0,0,0,0.92)"]}
               style={StyleSheet.absoluteFill}
             />
           )}
+          {account.animeId && <View style={[styles.neonRail, { backgroundColor: animeColor }]} />}
           <View style={styles.headerRow}>
             <ServiceIcon issuer={account.issuer} iconUrl={account.iconUrl} size={44} />
             <View style={styles.headerText}>
-              <Text style={styles.issuer} numberOfLines={1} testID={`vault-card-issuer-${account.id}`}>
-                {account.issuer}
-              </Text>
+              <View style={styles.titleRow}>
+                <Text style={styles.issuer} numberOfLines={1} testID={`vault-card-issuer-${account.id}`}>
+                  {account.issuer}
+                </Text>
+                {account.animeId && (
+                  <View style={[styles.animeBadge, { borderColor: animeColor, backgroundColor: `${animeColor}22` }]}>
+                    <Ionicons name="sparkles" size={11} color={animeColor} />
+                    <Text style={[styles.animeBadgeText, { color: animeColor }]}>ANIME</Text>
+                  </View>
+                )}
+              </View>
               <Text style={styles.account} numberOfLines={1}>
                 {account.account || " "}
               </Text>
             </View>
             <Pressable
+
               testID={`vault-card-fav-${account.id}`}
               onPress={() => onToggleFavorite?.(account.id)}
               hitSlop={12}
@@ -138,12 +150,20 @@ export const VaultCard = React.memo(function VaultCard({
               </Text>
               <Text style={styles.remaining}>{remaining}s remaining</Text>
             </View>
-            <CircularTimer size={64} strokeWidth={5} progress={ratio} period={account.period}>
+            <CircularTimer
+              size={64}
+              strokeWidth={5}
+              progress={ratio}
+              period={account.period}
+              colorStart={animeColor}
+              colorEnd={currentTheme.accentColor}
+            >
               <Text style={[styles.timerText, { color: animeColor }]}>{remaining}</Text>
             </CircularTimer>
           </View>
 
           <View style={styles.actions}>
+
             {hidden && (
               <Pressable
                 testID={`vault-card-reveal-${account.id}`}
@@ -173,16 +193,40 @@ const styles = StyleSheet.create({
   card: {
     padding: 0,
   },
+  neonRail: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 4,
+    opacity: 0.95,
+  },
   headerRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
   },
   headerText: { flex: 1 },
-  issuer: { ...typography.h3, color: colors.textPrimary },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  issuer: { ...typography.h3, color: colors.textPrimary, flexShrink: 1 },
+  animeBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    borderWidth: 1,
+    borderRadius: radii.pill,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+  },
+  animeBadgeText: { fontSize: 9, fontWeight: "900", letterSpacing: 0.5 },
   account: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
   starBtn: { padding: 4 },
   codeRow: {
+
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",

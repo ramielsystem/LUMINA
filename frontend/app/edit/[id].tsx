@@ -96,9 +96,9 @@ export default function EditAccount() {
   const handleSelectAnime = (anime: Anime) => {
     setLinkedAnime({
       id: anime.id,
-      title: anime.title.english || anime.title.romaji,
-      image: anime.bannerImage || anime.coverImage.extraLarge || anime.coverImage.large,
-      color: anime.coverImage.color,
+      title: anime.title?.english || anime.title?.romaji || "Anime",
+      image: anime.bannerImage || anime.coverImage?.extraLarge || anime.coverImage?.large || "",
+      color: anime.coverImage?.color,
     });
     setAnimeSearchVisible(false);
   };

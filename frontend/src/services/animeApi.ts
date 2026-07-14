@@ -131,10 +131,17 @@ export const animeService = {
             english
           }
           coverImage {
+            extraLarge
             large
+            color
           }
           bannerImage
+          description
+          status
+          genres
+          meanScore
         }
+
       }
     }
     `;

@@ -9,6 +9,17 @@ import Animated, {
 } from "react-native-reanimated";
 import { colors } from "@/src/lib/theme";
 
+interface Props {
+  size?: number;
+  strokeWidth?: number;
+  progress: number;
+  period: number;
+  children?: React.ReactNode;
+  testID?: string;
+  colorStart?: string;
+  colorEnd?: string;
+}
+
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 export const CircularTimer = React.memo(function CircularTimer({
@@ -18,6 +29,8 @@ export const CircularTimer = React.memo(function CircularTimer({
   period,
   children,
   testID,
+  colorStart = colors.primary,
+  colorEnd = colors.secondary,
 }: Props) {
   const isWeb = Platform.OS === "web";
   const radius = (size - strokeWidth) / 2;
@@ -39,7 +52,7 @@ export const CircularTimer = React.memo(function CircularTimer({
     strokeDashoffset: circumference * (1 - anim.value),
   }));
 
-  const gradientId = `grad-${size}`;
+  const gradientId = `grad-${size}-${Math.round(period)}`;
   const nearEnd = progress < 0.2;
 
   return (
@@ -47,10 +60,11 @@ export const CircularTimer = React.memo(function CircularTimer({
       <Svg width={size} height={size} style={{ position: "absolute" }}>
         <Defs>
           <LinearGradient id={gradientId} x1="0" y1="0" x2="1" y2="1">
-            <Stop offset="0" stopColor={nearEnd ? colors.warning : colors.primary} stopOpacity="1" />
-            <Stop offset="1" stopColor={nearEnd ? colors.danger : colors.secondary} stopOpacity="1" />
+            <Stop offset="0" stopColor={nearEnd ? colors.warning : colorStart} stopOpacity="1" />
+            <Stop offset="1" stopColor={nearEnd ? colors.danger : colorEnd} stopOpacity="1" />
           </LinearGradient>
         </Defs>
+
         <Circle
           cx={size / 2}
           cy={size / 2}

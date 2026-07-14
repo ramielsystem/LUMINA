@@ -19,24 +19,31 @@ export function GlassCard({ children, intensity = 40, style, borderless, glowCol
   const isWeb = Platform.OS === "web";
   const isAndroid = Platform.OS === "android";
   const skipBlur = isWeb || isAndroid;
+  const glowStyle = glowColor
+    ? {
+        borderColor: glowColor,
+        borderWidth: 1,
+        ...(isAndroid
+          ? {}
+          : {
+              shadowColor: glowColor,
+              shadowOffset: { width: 0, height: 0 },
+              shadowOpacity: 0.35,
+              shadowRadius: 12,
+            }),
+      }
+    : null;
   
   return (
-    <View testID={testID} style={[styles.wrapper, style, glowColor ? {
-      shadowColor: glowColor,
-      shadowOffset: { width: 0, height: 0 },
-      shadowOpacity: 0.5,
-      shadowRadius: 15,
-      elevation: 8,
-      borderColor: glowColor,
-      borderWidth: 1,
-    } : {}]}>
+    <View testID={testID} style={[styles.wrapper, style, glowStyle]}>
       {skipBlur ? (
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(20, 20, 20, 0.9)" }]} />
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(18, 18, 20, 0.92)" }]} />
       ) : (
         <BlurView intensity={intensity} tint="dark" style={StyleSheet.absoluteFill} />
       )}
       <View style={[StyleSheet.absoluteFill, styles.tint]} />
-      {!borderless && !glowColor && <View style={[StyleSheet.absoluteFill, styles.border]} pointerEvents="none" />}
+      {!borderless && <View style={[StyleSheet.absoluteFill, styles.border, glowColor ? { borderColor: glowColor } : null]} pointerEvents="none" />}
+      {glowColor && <View style={[StyleSheet.absoluteFill, styles.innerGlow, { backgroundColor: glowColor }]} pointerEvents="none" />}
       <View style={styles.content}>{children}</View>
     </View>
   );
@@ -55,6 +62,9 @@ const styles = StyleSheet.create({
     borderRadius: radii.xl,
     borderWidth: 1,
     borderColor: colors.glassBorder,
+  },
+  innerGlow: {
+    opacity: 0.08,
   },
   content: {
     padding: 20,

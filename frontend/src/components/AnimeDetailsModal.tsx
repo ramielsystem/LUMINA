@@ -8,13 +8,12 @@ import {
   Pressable,
   ScrollView,
   Dimensions,
-  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { BlurView } from "expo-blur";
 import { colors, radii, spacing, typography } from "@/src/lib/theme";
 import { Anime } from "@/src/services/animeApi";
 import { GlassCard } from "./GlassCard";
+import { useAppTheme } from "../contexts/ThemeContext";
 import { useWallpaper } from "../contexts/WallpaperContext";
 import { useToast } from "./Toast";
 
@@ -28,69 +27,100 @@ interface Props {
 }
 
 export function AnimeDetailsModal({ anime, visible, onClose, onLink }: Props) {
+  const { currentTheme, setDynamicTheme } = useAppTheme();
   const { setWallpaper, setBlurIntensity } = useWallpaper();
   const toast = useToast();
 
   if (!anime) return null;
 
+  const title = anime.title?.english || anime.title?.romaji || "Anime";
+  const accentColor = anime.coverImage?.color || currentTheme.primaryColor;
+  const wallpaper = anime.bannerImage || anime.coverImage?.extraLarge || anime.coverImage?.large || null;
+  const score = anime.meanScore ? (anime.meanScore / 10).toFixed(1) : "--";
+  const cleanDescription = anime.description?.replace(/<[^>]*>?/gm, "") || "Sem descrição disponível.";
+
   const handleSetWallpaper = async () => {
-    const url = anime.bannerImage || anime.coverImage.extraLarge || anime.coverImage.large;
-    await setWallpaper(url);
-    setBlurIntensity(25); // Default comfortable blur
+    if (!wallpaper) return;
+    await setWallpaper(wallpaper);
+    setBlurIntensity(18);
     toast.show("Papel de parede definido!");
     onClose();
   };
 
-  const isWeb = Platform.OS === "web";
+  const handleApplyTheme = async () => {
+    await setDynamicTheme({
+      name: title,
+      primaryColor: accentColor,
+      accentColor: currentTheme.accentColor,
+      wallpaper,
+    });
+    if (wallpaper) await setWallpaper(wallpaper);
+    setBlurIntensity(18);
+    toast.show("Tema anime aplicado!");
+    onClose();
+  };
 
   return (
+
     <Modal visible={visible} animationType="fade" transparent>
       <View style={styles.overlay}>
         <View style={styles.backdrop} onTouchEnd={onClose} />
-        <GlassCard style={styles.container}>
+        <GlassCard style={styles.container} glowColor={accentColor}>
           <ScrollView bounces={false} showsVerticalScrollIndicator={false}>
             <View style={styles.imageContainer}>
-              <Image
-                source={{ uri: anime.bannerImage || anime.coverImage.extraLarge || anime.coverImage.large }}
-                style={styles.banner}
-                resizeMode="cover"
-              />
+              {wallpaper && (
+                <Image
+                  source={{ uri: wallpaper }}
+                  style={styles.banner}
+                  resizeMode="cover"
+                  resizeMethod="resize"
+                  fadeDuration={0}
+                />
+              )}
+              <View style={[styles.colorRail, { backgroundColor: accentColor }]} />
               <Pressable style={styles.closeBtn} onPress={onClose}>
                 <Ionicons name="close" size={24} color="#fff" />
               </Pressable>
             </View>
 
             <View style={styles.content}>
-              <Text style={styles.title}>
-                {anime.title.english || anime.title.romaji}
-              </Text>
+              <Text style={styles.title}>{title}</Text>
               
               <View style={styles.row}>
-                <Text style={styles.score}>⭐ {anime.meanScore / 10}</Text>
-                <Text style={styles.status}>{anime.status}</Text>
+                <Text style={[styles.score, { color: accentColor }]}>⭐ {score}</Text>
+                <Text style={styles.status}>{anime.status || "ANIME"}</Text>
               </View>
 
-              <Text style={styles.description} numberOfLines={6}>
-                {anime.description?.replace(/<[^>]*>?/gm, "")}
-              </Text>
+              <View style={styles.paletteRow}>
+                <View style={[styles.paletteDot, { backgroundColor: accentColor }]} />
+                <Text style={styles.paletteText}>Paleta neon detectada</Text>
+              </View>
+
+              <Text style={styles.description} numberOfLines={6}>{cleanDescription}</Text>
 
               <View style={styles.actions}>
-                <Pressable style={styles.actionBtn} onPress={handleSetWallpaper}>
-                  <Ionicons name="image-outline" size={20} color={colors.primary} />
-                  <Text style={styles.actionText}>Set Wallpaper</Text>
+                <Pressable style={[styles.actionBtn, { borderColor: accentColor }]} onPress={handleSetWallpaper}>
+                  <Ionicons name="image-outline" size={20} color={accentColor} />
+                  <Text style={[styles.actionText, { color: accentColor }]}>Wallpaper</Text>
                 </Pressable>
 
-                <Pressable 
-                  style={[styles.actionBtn, styles.primaryAction]} 
+                <Pressable style={[styles.actionBtn, { borderColor: accentColor }]} onPress={handleApplyTheme}>
+                  <Ionicons name="color-palette-outline" size={20} color={accentColor} />
+                  <Text style={[styles.actionText, { color: accentColor }]}>Tema</Text>
+                </Pressable>
+
+                <Pressable
+                  style={[styles.actionBtn, styles.primaryAction, { backgroundColor: accentColor, borderColor: accentColor }]}
                   onPress={() => onLink(anime)}
                 >
                   <Ionicons name="link" size={20} color={colors.base} />
-                  <Text style={[styles.actionText, { color: colors.base }]}>Link Account</Text>
+                  <Text style={[styles.actionText, { color: colors.base }]}>Vincular</Text>
                 </Pressable>
               </View>
             </View>
           </ScrollView>
         </GlassCard>
+
       </View>
     </Modal>
   );
@@ -129,8 +159,15 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 4,
   },
+  colorRail: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 4,
+  },
   content: {
-    padding: spacing.l,
+    padding: spacing.lg,
   },
   title: {
     ...typography.h2,
@@ -141,17 +178,33 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    marginBottom: spacing.m,
+    marginBottom: spacing.md,
   },
   score: {
     ...typography.caption,
-    color: colors.accent,
     fontWeight: "bold",
   },
   status: {
     ...typography.caption,
     color: colors.textMuted,
     textTransform: "uppercase",
+  },
+  paletteRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: spacing.md,
+  },
+  paletteDot: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.45)",
+  },
+  paletteText: {
+    ...typography.caption,
+    color: colors.textMuted,
   },
   description: {
     ...typography.body,
@@ -162,8 +215,9 @@ const styles = StyleSheet.create({
   },
   actions: {
     flexDirection: "row",
-    gap: 12,
+    gap: 10,
   },
+
   actionBtn: {
     flex: 1,
     flexDirection: "row",

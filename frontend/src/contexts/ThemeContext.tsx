@@ -95,7 +95,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       const savedDynamic = await AsyncStorage.getItem(DYNAMIC_THEME_KEY);
       
       if (savedDynamic) {
-        setCurrentTheme(JSON.parse(savedDynamic));
+        try {
+          setCurrentTheme(JSON.parse(savedDynamic));
+        } catch {
+          await AsyncStorage.removeItem(DYNAMIC_THEME_KEY);
+        }
       } else if (savedId) {
         const found = DEFAULT_THEMES.find(t => t.id === savedId);
         if (found) setCurrentTheme(found);
@@ -104,6 +108,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       if (savedWall) {
         setCustomWallpaperState(savedWall);
       }
+
     }
     load();
   }, []);
@@ -120,9 +125,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const setDynamicTheme = async (theme: Partial<AnimeTheme>) => {
     const newTheme: AnimeTheme = {
       ...DEFAULT_THEMES[0],
-      ...theme,
       id: "dynamic",
       name: "Custom Anime",
+      ...theme,
     };
     setCurrentTheme(newTheme);
     await AsyncStorage.setItem(DYNAMIC_THEME_KEY, JSON.stringify(newTheme));

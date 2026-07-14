@@ -27,17 +27,20 @@ export function GlobalBackground() {
         source={{ uri: wallpaper }}
         style={StyleSheet.absoluteFill}
         resizeMode="cover"
+        resizeMethod="resize"
+        fadeDuration={0}
       />
       {skipBlur ? (
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(0,0,0,0.85)" }]} />
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(0,0,0,0.86)" }]} />
       ) : (
         <BlurView
-          intensity={blurIntensity}
+          intensity={Math.min(blurIntensity, 28)}
           tint="dark"
           style={StyleSheet.absoluteFill}
         />
       )}
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(0,0,0,0.4)" }]} />
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(0,0,0,0.38)" }]} />
+
     </View>
   );
 }

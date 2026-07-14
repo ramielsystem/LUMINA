@@ -70,26 +70,27 @@ export function AnimeSearchModal({ visible, onClose, onSelect }: Props) {
               data={results}
               keyExtractor={(item) => item.id.toString()}
               contentContainerStyle={styles.list}
-              renderItem={({ item }) => (
-                <Pressable
-                  style={styles.item}
-                  onPress={() => onSelect(item)}
-                >
-                  <Image
-                    source={{ uri: item.coverImage.large }}
-                    style={styles.cover}
-                  />
-                  <View style={styles.itemInfo}>
-                    <Text style={styles.itemTitle} numberOfLines={1}>
-                      {item.title.english || item.title.romaji}
-                    </Text>
-                    <Text style={styles.itemSub}>
-                      {item.genres.slice(0, 2).join(", ")}
-                    </Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-                </Pressable>
-              )}
+              renderItem={({ item }) => {
+                const title = item.title?.english || item.title?.romaji || "Anime";
+                const cover = item.coverImage?.large || item.coverImage?.extraLarge;
+                const genres = item.genres?.slice(0, 2).join(", ") || "Anime";
+
+                return (
+                  <Pressable style={styles.item} onPress={() => onSelect(item)}>
+                    {cover ? (
+                      <Image source={{ uri: cover }} style={styles.cover} resizeMethod="resize" fadeDuration={0} />
+                    ) : (
+                      <View style={styles.cover} />
+                    )}
+                    <View style={styles.itemInfo}>
+                      <Text style={styles.itemTitle} numberOfLines={1}>{title}</Text>
+                      <Text style={styles.itemSub}>{genres}</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+                  </Pressable>
+                );
+              }}
+
               ListEmptyComponent={
                 query.length >= 3 ? (
                   <Text style={styles.empty}>Nenhum resultado encontrado</Text>
@@ -113,14 +114,14 @@ const styles = StyleSheet.create({
     height: "80%",
     borderBottomLeftRadius: 0,
     borderBottomRightRadius: 0,
-    paddingTop: spacing.m,
+    paddingTop: spacing.md,
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: spacing.m,
-    paddingHorizontal: spacing.m,
+    marginBottom: spacing.md,
+    paddingHorizontal: spacing.md,
   },
   title: { ...typography.h2, color: colors.textPrimary },
   searchBar: {
@@ -129,9 +130,10 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.05)",
     borderRadius: radii.md,
     paddingHorizontal: 12,
-    marginHorizontal: spacing.m,
-    marginBottom: spacing.m,
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.md,
   },
+
   input: {
     flex: 1,
     color: colors.textPrimary,
@@ -142,10 +144,11 @@ const styles = StyleSheet.create({
   item: {
     flexDirection: "row",
     alignItems: "center",
-    padding: spacing.m,
+    padding: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: "rgba(255,255,255,0.05)",
   },
+
   cover: {
     width: 40,
     height: 56,
