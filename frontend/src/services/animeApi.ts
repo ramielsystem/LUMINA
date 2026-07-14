@@ -69,7 +69,7 @@ export const animeService = {
       });
 
       const json = await response.json();
-      return json.data.Page.media;
+      return json?.data?.Page?.media || [];
     } catch (error) {
       console.error('Error fetching trending anime:', error);
       return [];
@@ -113,7 +113,7 @@ export const animeService = {
       });
 
       const json = await response.json();
-      return json.data.Page.media;
+      return json?.data?.Page?.media || [];
     } catch (error) {
       console.error('Error fetching season releases:', error);
       return [];
@@ -152,7 +152,7 @@ export const animeService = {
       });
 
       const json = await response.json();
-      return json.data.Page.media;
+      return json?.data?.Page?.media || [];
     } catch (error) {
       console.error('Error searching anime:', error);
       return [];

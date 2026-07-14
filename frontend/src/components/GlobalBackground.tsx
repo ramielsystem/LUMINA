@@ -18,22 +18,25 @@ export function GlobalBackground() {
 
   const isWeb = Platform.OS === "web";
   const isAndroid = Platform.OS === "android";
-  // On web/android, if intensity is very high, blur might be laggy, but let's try to respect it
-  // We'll cap it or use an overlay if it's too much.
+  // On Web/Android, BlurView is expensive. We use a dark overlay instead.
+  const skipBlur = isWeb || isAndroid;
 
   return (
     <View style={StyleSheet.absoluteFill}>
-      <Image 
-        source={{ uri: wallpaper }} 
-        style={StyleSheet.absoluteFill} 
+      <Image
+        source={{ uri: wallpaper }}
+        style={StyleSheet.absoluteFill}
         resizeMode="cover"
       />
-      {/* On Web/Android, BlurView can be expensive, but for a global background it's usually okay if not re-rendering constantly */}
-      <BlurView 
-        intensity={blurIntensity} 
-        tint="dark" 
-        style={StyleSheet.absoluteFill} 
-      />
+      {skipBlur ? (
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(0,0,0,0.85)" }]} />
+      ) : (
+        <BlurView
+          intensity={blurIntensity}
+          tint="dark"
+          style={StyleSheet.absoluteFill}
+        />
+      )}
       <View style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(0,0,0,0.4)" }]} />
     </View>
   );

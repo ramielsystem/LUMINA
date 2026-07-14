@@ -17,7 +17,7 @@ import { ScreenHeader } from "@/src/components/ScreenHeader";
 import { BottomNav } from "@/src/components/BottomNav";
 import { GlassCard } from "@/src/components/GlassCard";
 import { animeService, Anime } from "@/src/services/animeApi";
-import { useTranslation } from "@/src/i18n";
+import { useI18n } from "@/src/i18n";
 import { LinearGradient } from "expo-linear-gradient";
 import { AnimeDetailsModal } from "@/src/components/AnimeDetailsModal";
 import { useLock } from "@/src/contexts/LockContext";
@@ -27,7 +27,7 @@ import { Ionicons } from "@expo/vector-icons";
 const { width } = Dimensions.get("window");
 
 export default function AnimeHubScreen() {
-  const { t } = useTranslation();
+  const { t } = useI18n();
   const { vault, updateVault } = useLock();
   const toast = useToast();
   
@@ -46,8 +46,8 @@ export default function AnimeHubScreen() {
         animeService.getTrending(1, 10),
         animeService.getSeasonReleases(1, 10),
       ]);
-      setTrending(trendingData);
-      setSeasonReleases(seasonData);
+      setTrending(trendingData || []);
+      setSeasonReleases(seasonData || []);
     } catch (error) {
       console.error("Error loading anime data:", error);
     } finally {
@@ -106,7 +106,7 @@ export default function AnimeHubScreen() {
             {item.title.english || item.title.romaji}
           </Text>
           <View style={styles.metaRow}>
-            <Text style={styles.scoreText}>⭐ {item.meanScore / 10}</Text>
+            <Text style={styles.scoreText}>⭐ {(item.meanScore || 0) / 10}</Text>
             {item.status === "RELEASING" && (
               <View style={styles.liveBadge}>
                 <View style={styles.liveDot} />
@@ -143,7 +143,7 @@ export default function AnimeHubScreen() {
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.horizontalList}
-              snapToInterval={width * 0.75 + spacing.m}
+              snapToInterval={width * 0.75 + spacing.md}
               decelerationRate="fast"
             />
           </View>
@@ -157,7 +157,7 @@ export default function AnimeHubScreen() {
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.horizontalList}
-              snapToInterval={width * 0.45 + spacing.m}
+              snapToInterval={width * 0.45 + spacing.md}
               decelerationRate="fast"
             />
           </View>
@@ -230,21 +230,21 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   section: {
-    marginTop: spacing.l,
+    marginTop: spacing.lg,
   },
   sectionTitle: {
     ...typography.h2,
     color: colors.primary,
-    paddingHorizontal: spacing.m,
-    marginBottom: spacing.m,
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.md,
   },
   horizontalList: {
-    paddingHorizontal: spacing.m,
+    paddingHorizontal: spacing.md,
   },
   animeCard: {
     width: width * 0.45,
     height: 250,
-    marginRight: spacing.m,
+    marginRight: spacing.md,
     padding: 0,
     overflow: "hidden",
     borderRadius: 16,
@@ -271,11 +271,11 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    padding: spacing.m,
+    padding: spacing.md,
   },
   animeTitle: {
     ...typography.h3,
-    color: colors.text,
+    color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "bold",
     marginBottom: 4,
@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
   },
   scoreText: {
     ...typography.caption,
-    color: colors.accent,
+    color: colors.primary,
     fontWeight: "bold",
   },
   liveBadge: {
@@ -313,9 +313,9 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   comingSoon: {
-    margin: spacing.m,
+    margin: spacing.md,
     marginTop: spacing.xl,
-    padding: spacing.l,
+    padding: spacing.lg,
     borderRadius: 16,
     backgroundColor: "rgba(255, 255, 255, 0.03)",
     borderWidth: 1,
@@ -343,13 +343,13 @@ const styles = StyleSheet.create({
     height: "60%",
     borderBottomLeftRadius: 0,
     borderBottomRightRadius: 0,
-    padding: spacing.m,
+    padding: spacing.md,
   },
   pickerHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: spacing.l,
+    marginBottom: spacing.lg,
   },
   pickerTitle: {
     ...typography.h2,
@@ -358,7 +358,7 @@ const styles = StyleSheet.create({
   accountItem: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: spacing.m,
+    paddingVertical: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: "rgba(255,255,255,0.1)",
   },

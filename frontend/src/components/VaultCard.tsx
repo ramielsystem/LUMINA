@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View, Image } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as Clipboard from "expo-clipboard";
-import Animated, { FadeIn, useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
 
 import { colors, radii, spacing, typography } from "@/src/lib/theme";
@@ -13,6 +13,7 @@ import { CircularTimer } from "./CircularTimer";
 import { GlassCard } from "./GlassCard";
 import { ServiceIcon } from "./ServiceIcon";
 import { useToast } from "./Toast";
+import { useAppTheme } from "../contexts/ThemeContext";
 
 interface Props {
   account: VaultAccount;
@@ -21,7 +22,6 @@ interface Props {
   onToggleFavorite?: (id: string) => void;
   onPress?: (id: string) => void;
   onCopy?: (account: VaultAccount, code: string) => void;
-  onLinkAnime?: (id: string) => void;
 }
 
 function formatCode(code: string): string {
@@ -41,8 +41,9 @@ export const VaultCard = React.memo(function VaultCard({
   const [reveal, setReveal] = useState(!hidden);
   const scale = useSharedValue(1);
   const toast = useToast();
+  const { currentTheme } = useAppTheme();
 
-  const animeColor = account.animeTheme?.primaryColor || colors.primary;
+  const animeColor = account.animeTheme?.primaryColor || currentTheme.primaryColor;
   const animeBanner = account.animeTheme?.bannerImage;
 
   useEffect(() => {
@@ -91,7 +92,7 @@ export const VaultCard = React.memo(function VaultCard({
       >
         <GlassCard
           style={[styles.card, animeBanner ? { overflow: "hidden" } : {}]}
-          glowColor={account.animeTheme ? animeColor : undefined}
+          glowColor={account.animeId ? animeColor : undefined}
         >
           {animeBanner && (
             <Image
@@ -107,7 +108,6 @@ export const VaultCard = React.memo(function VaultCard({
             />
           )}
           <View style={styles.headerRow}>
-
             <ServiceIcon issuer={account.issuer} iconUrl={account.iconUrl} size={44} />
             <View style={styles.headerText}>
               <Text style={styles.issuer} numberOfLines={1} testID={`vault-card-issuer-${account.id}`}>
@@ -158,14 +158,11 @@ export const VaultCard = React.memo(function VaultCard({
               testID={`vault-card-copy-${account.id}`}
               onPress={doCopy}
               style={[styles.pillPrimary, { backgroundColor: animeColor }]}
-              accessibilityRole="button"
-              accessibilityLabel={`Copy code for ${account.issuer}`}
             >
               <Ionicons name="copy-outline" size={16} color={colors.base} />
               <Text style={styles.pillPrimaryText}>Copy</Text>
             </Pressable>
           </View>
-
         </GlassCard>
       </Pressable>
     </Animated.View>
@@ -174,7 +171,7 @@ export const VaultCard = React.memo(function VaultCard({
 
 const styles = StyleSheet.create({
   card: {
-    padding: 0, // GlassCard already has padding: 20
+    padding: 0,
   },
   headerRow: {
     flexDirection: "row",
@@ -193,7 +190,6 @@ const styles = StyleSheet.create({
   },
   codeBlock: { flex: 1 },
   codeText: {
-    color: colors.monoAccent,
     fontSize: 34,
     fontWeight: "700",
     letterSpacing: 4,
@@ -201,7 +197,6 @@ const styles = StyleSheet.create({
   },
   remaining: { ...typography.caption, color: colors.textMuted, marginTop: 2 },
   timerText: {
-    color: colors.textPrimary,
     fontSize: 14,
     fontWeight: "700",
     fontVariant: ["tabular-nums"],
@@ -216,7 +211,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: colors.primary,
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: radii.pill,
